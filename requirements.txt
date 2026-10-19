@@ -1,0 +1,8 @@
+fastapi>=0.115,<1
+uvicorn[standard]>=0.34,<1
+faster-whisper>=1.2,<2
+av==16.0.1
+httpx>=0.28,<1
+numpy>=2,<3
+nvidia-cublas-cu12==12.8.4.1; sys_platform == 'win32'
+nvidia-cudnn-cu12==9.10.2.21; sys_platform == 'win32'

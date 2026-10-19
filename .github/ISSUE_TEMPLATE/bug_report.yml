@@ -1,0 +1,33 @@
+name: Bug report
+description: Report a reproducible capture, subtitle, or setup issue.
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: Do not attach pairing files, private recordings, browser profiles, or unredacted logs.
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior
+      description: What did you expect, and what happened?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: For a public stream, include a URL, timestamp, and languages spoken if available.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Chrome version, extension version, GPU/VRAM, and model names.
+    validations:
+      required: true
+  - type: textarea
+    id: checks
+    attributes:
+      label: Additional evidence
+      description: Optional short caption examples or carefully redacted errors.

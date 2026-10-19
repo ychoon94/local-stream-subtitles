@@ -1,0 +1,14 @@
+{
+  "name": "local-stream-subtitles",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "description": "Local GPU Japanese-to-English subtitles for YouTube",
+  "scripts": {
+    "test": "node --test tests/extension.test.mjs",
+    "test:browser": "node tests/browser-integration.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}

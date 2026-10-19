@@ -1,0 +1,42 @@
+name: Source checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install test dependencies
+        run: |
+          python -m pip install -r requirements-dev.txt
+          npm ci --ignore-scripts
+      - name: Check source inventory
+        run: python -m scripts.check_release
+      - name: Test backend without GPU or models
+        run: python -m pytest -q tests/test_backend.py
+      - name: Test extension
+        run: npm test
+      - name: Check extension syntax
+        run: |
+          for source in extension/*.js; do node --check "$source"; done
+  windows-launchers:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Test launcher isolation without installing Ollama
+        shell: powershell
+        run: ./tests/test_launchers.ps1

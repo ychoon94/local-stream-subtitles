@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Local Stream Subtitles</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div class="brand-mark" aria-hidden="true">S</div>
+        <div class="brand-copy">
+          <p class="eyebrow">LOCAL · LIVE</p>
+          <h1>Stream subtitles</h1>
+        </div>
+        <span id="connection-indicator" class="connection-indicator" aria-label="Checking local service"></span>
+      </header>
+
+      <section class="service-card" aria-labelledby="service-title">
+        <div class="service-icon" aria-hidden="true"><span></span></div>
+        <div class="service-copy">
+          <h2 id="service-title">Local service</h2>
+          <p id="service-status" role="status" aria-live="polite">Checking on this PC…</p>
+        </div>
+        <button id="refresh-service" class="icon-button" type="button" title="Check again" aria-label="Check local service again">↻</button>
+      </section>
+
+      <p id="page-hint" class="page-hint" role="status"></p>
+
+      <section id="pairing-section" class="pairing-section" aria-labelledby="pairing-title" hidden>
+        <div class="section-heading">
+          <h2 id="pairing-title">Pair this extension</h2>
+          <span class="step-label">ONE TIME</span>
+        </div>
+        <label class="field-label" for="pairing-token">Local pairing token</label>
+        <div class="input-wrap">
+          <input id="pairing-token" type="password" autocomplete="off" spellcheck="false" placeholder="Paste token from local setup">
+          <button id="toggle-token" class="reveal-button" type="button" aria-label="Show pairing token">Show</button>
+        </div>
+        <p class="helper-copy">Saved only in this browser profile. You can also add <code>local-config.json</code> beside the extension manifest.</p>
+      </section>
+
+      <section class="settings-section" aria-labelledby="settings-title">
+        <div class="section-heading">
+          <h2 id="settings-title">Subtitle settings</h2>
+          <span class="settings-label">JAPANESE → ENGLISH</span>
+        </div>
+
+        <fieldset class="mode-options">
+          <legend>Translation style</legend>
+          <label class="mode-card">
+            <input type="radio" name="mode" value="context" checked>
+            <span class="mode-content">
+              <span class="mode-title">Context</span>
+              <span class="mode-description">More natural phrasing</span>
+            </span>
+            <span class="radio-indicator" aria-hidden="true"></span>
+          </label>
+          <label class="mode-card">
+            <input type="radio" name="mode" value="direct">
+            <span class="mode-content">
+              <span class="mode-title">Direct</span>
+              <span class="mode-description">Closer to the Japanese</span>
+            </span>
+            <span class="radio-indicator" aria-hidden="true"></span>
+          </label>
+        </fieldset>
+
+        <div class="preference-row">
+          <div class="preference-copy">
+            <span class="preference-title">Show Japanese</span>
+            <span class="preference-description">Keep the original above English</span>
+          </div>
+          <label class="switch" aria-label="Show Japanese transcript">
+            <input id="show-japanese" type="checkbox" checked>
+            <span class="switch-track"><span></span></span>
+          </label>
+        </div>
+
+        <label class="preference-row font-row" for="font-size">
+          <span class="preference-copy">
+            <span class="preference-title">Subtitle size</span>
+            <span class="preference-description">Changes the overlay text</span>
+          </span>
+          <select id="font-size" aria-label="Subtitle size">
+            <option value="small">Small</option>
+            <option value="medium" selected>Medium</option>
+            <option value="large">Large</option>
+          </select>
+        </label>
+      </section>
+
+      <div class="action-row">
+        <button id="start-button" class="primary-button" type="button">
+          <span class="play-icon" aria-hidden="true">▶</span>
+          <span>Start subtitles</span>
+        </button>
+        <button id="stop-button" class="stop-button" type="button" disabled>Stop</button>
+      </div>
+
+      <div id="session-status" class="session-status" role="status" aria-live="polite">
+        <span id="session-dot" class="session-dot"></span>
+        <span id="session-message">Ready when you are</span>
+      </div>
+
+      <footer class="privacy-note">
+        <span class="privacy-lock" aria-hidden="true">◆</span>
+        <p>Tab audio goes only to the local service on this PC. No microphone is used, and subtitles are not saved.</p>
+      </footer>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>
