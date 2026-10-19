@@ -1,12 +1,14 @@
 # Local Stream Subtitles
 
+> **Early preview — Windows/NVIDIA.** Expect bugs and imperfect bilingual subtitles.
+
 Live English subtitles over YouTube videos and livestreams, using speech recognition
 and translation on your own PC. Built for Japanese streams, including speakers who
 switch between Japanese and English. No paid API or account is needed for inference.
 
 ![English and Japanese subtitles on a controlled test player](docs/assets/subtitles-demo.png)
 
-**Windows + NVIDIA preview.** The extension and local service are MIT-licensed.
+The extension and local service are MIT-licensed.
 Downloaded models and runtime components retain their own licenses; see
 [third-party notices](THIRD_PARTY_NOTICES.md). This is an early release, with manual
 Chrome installation and hardware-dependent latency.
