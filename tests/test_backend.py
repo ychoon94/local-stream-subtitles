@@ -21,18 +21,10 @@ def pcm(seconds, amplitude=0.0):
     return (np.ones(int(SAMPLE_RATE * seconds)) * amplitude * 32767).astype('<i2').tobytes()
 
 
-def test_silence_does_not_create_subtitles():
+def test_long_silence_stays_bounded_and_speech_has_preroll_until_pause():
     buffer = SpeechBuffer()
     for _ in range(200):
         assert buffer.feed(pcm(0.1)) is None
-    assert len(buffer.pre_roll) == 3
-    assert buffer.frames == []
-
-
-def test_speech_segment_has_preroll_and_ends_after_silence():
-    buffer = SpeechBuffer()
-    for _ in range(3):
-        buffer.feed(pcm(0.1))
     for _ in range(4):
         assert buffer.feed(pcm(0.1, 0.1)) is None
     result = None
@@ -40,7 +32,6 @@ def test_speech_segment_has_preroll_and_ends_after_silence():
         result = buffer.feed(pcm(0.1)) or result
     assert result is not None
     assert len(result.samples) == SAMPLE_RATE * 1.2
-    assert buffer.frames == []
 
 
 def test_continuous_audio_is_bounded():

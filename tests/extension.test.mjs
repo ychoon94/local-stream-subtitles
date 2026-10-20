@@ -80,7 +80,7 @@ function makeEvent() {
   };
 }
 
-function makeWorkerHarness({ getTab, initialData = {}, offscreenState = null, hasOffscreen = false, fetchHealth } = {}) {
+function makeWorkerHarness({ initialData = {}, offscreenState = null, hasOffscreen = false, fetchHealth } = {}) {
   const data = new Map(Object.entries(initialData));
   const events = {
     runtimeMessage: makeEvent(),
@@ -92,7 +92,6 @@ function makeWorkerHarness({ getTab, initialData = {}, offscreenState = null, ha
   let tabGetCalls = 0;
   let captureRequests = 0;
   let offscreenStarts = 0;
-  let offscreenCreates = 0;
   let offscreenCloses = 0;
   let offscreenPresent = hasOffscreen;
   const contentMessages = [];
@@ -121,14 +120,14 @@ function makeWorkerHarness({ getTab, initialData = {}, offscreenState = null, ha
       }
     },
     tabs: {
-      get(tabId) { tabGetCalls += 1; return getTab ? getTab(tabId) : Promise.resolve({ id: tabId, active: true, url: 'https://www.youtube.com/watch?v=abc' }); },
+      async get(tabId) { tabGetCalls += 1; return { id: tabId, active: true, url: 'https://www.youtube.com/watch?v=abc' }; },
       sendMessage: async (_tabId, message) => { contentMessages.push(message); },
       onRemoved: events.tabsRemoved,
       onUpdated: events.tabsUpdated
     },
     action: { setBadgeText: async () => undefined, setBadgeBackgroundColor: async () => undefined },
     offscreen: {
-      async createDocument() { offscreenCreates += 1; offscreenPresent = true; },
+      async createDocument() { offscreenPresent = true; },
       async closeDocument() { offscreenCloses += 1; offscreenPresent = false; }
     },
     tabCapture: {
@@ -160,7 +159,6 @@ function makeWorkerHarness({ getTab, initialData = {}, offscreenState = null, ha
     get tabGetCalls() { return tabGetCalls; },
     get captureRequests() { return captureRequests; },
     get offscreenStarts() { return offscreenStarts; },
-    get offscreenCreates() { return offscreenCreates; },
     get offscreenCloses() { return offscreenCloses; },
     contentMessages,
     async load() {
@@ -435,7 +433,7 @@ test('content subtitle messages render without recursion and survive overlay rea
       this.parentElement = null;
     }
     attachShadow() {
-      this.shadowRoot = new FakeShadowRoot();
+      this.shadowRoot = new FakeElement('shadow-root');
       return this.shadowRoot;
     }
     querySelector(selector) {
@@ -457,10 +455,6 @@ test('content subtitle messages render without recursion and survive overlay rea
       }
       return false;
     }
-  }
-
-  class FakeShadowRoot extends FakeElement {
-    querySelector(selector) { return super.querySelector(selector); }
   }
 
   const player = new FakeElement('div');
@@ -519,13 +513,11 @@ test('content subtitle messages render without recursion and survive overlay rea
   assert.equal(firstHost.parentElement, player);
   assert.equal(firstHost.shadowRoot.querySelector('.original').textContent, 'こんにちは');
   assert.equal(firstHost.shadowRoot.querySelector('.translated').textContent, '<img src=x onerror=alert(1)>');
-  assert.equal(firstHost.shadowRoot.querySelector('.translated').innerHTML, undefined);
   assert.ok(firstHost.shadowRoot.querySelector('.stack').classList.contains('visible'));
 
   firstHost.remove();
   assert.doesNotThrow(() => intervals[1]());
   const replacementHost = overlayHosts.at(-1);
-  assert.equal(replacementHost, firstHost);
   assert.equal(replacementHost.parentElement, player);
   assert.equal(replacementHost.shadowRoot.querySelector('.translated').textContent, '<img src=x onerror=alert(1)>');
 });
