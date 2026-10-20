@@ -80,8 +80,13 @@ function isSupportedVideo(url) {
   if (typeof url !== 'string') return false;
   try {
     const parsed = new URL(url);
-    const isYoutube = parsed.protocol === 'https:' && ['youtube.com', 'www.youtube.com'].includes(parsed.hostname);
-    return isYoutube && (parsed.pathname === '/watch' || parsed.pathname.startsWith('/live/'));
+    if (parsed.protocol !== 'https:') return false;
+    if (['youtube.com', 'www.youtube.com'].includes(parsed.hostname)) {
+      return parsed.pathname === '/watch' || parsed.pathname.startsWith('/live/');
+    }
+    if (parsed.hostname === 'player.vimeo.com') return /^\/video\/\d+\/?$/.test(parsed.pathname);
+    return ['vimeo.com', 'www.vimeo.com'].includes(parsed.hostname) &&
+      /^\/(?:\d+(?:\/[a-zA-Z0-9]+)?|channels\/[^/]+\/\d+|groups\/[^/]+\/videos\/\d+|(?:showcase|album)\/\d+\/video\/\d+)\/?$/.test(parsed.pathname);
   } catch {
     return false;
   }
@@ -159,10 +164,10 @@ async function getActiveTab() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   activeTab = tab || null;
   if (isSupportedVideo(activeTab?.url)) {
-    elements.pageHint.textContent = 'Ready on this YouTube video or live stream.';
+    elements.pageHint.textContent = 'Ready on this video.';
     elements.pageHint.classList.remove('is-error');
   } else {
-    elements.pageHint.textContent = 'Open a YouTube video or live stream to use subtitles.';
+    elements.pageHint.textContent = 'Open a YouTube video, live stream, or Vimeo video to use subtitles.';
     elements.pageHint.classList.remove('is-error');
   }
   renderButtons();

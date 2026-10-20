@@ -2,8 +2,8 @@
 
 > **Early preview — Windows/NVIDIA.** Expect bugs and imperfect bilingual subtitles.
 
-Live English subtitles over YouTube videos and livestreams, using speech recognition
-and translation on your own PC. Built for Japanese streams, including speakers who
+Live English subtitles for YouTube videos and livestreams and Vimeo videos, using
+speech recognition and translation on your own PC. Built for Japanese streams, including speakers who
 switch between Japanese and English. No paid API or account is needed for inference.
 
 ![English and Japanese subtitles on a controlled test player](docs/assets/subtitles-demo.png)
@@ -28,20 +28,20 @@ profiles, CPU-only use, macOS, and Linux are not validated by the Windows launch
    window open while watching. The first GPU warm-up can take a few minutes.
 4. Open `chrome://extensions`, enable **Developer mode**, choose **Load unpacked**,
    and select the source folder's **`extension`** directory.
-5. Refresh any YouTube tabs that were already open. Open a video or livestream,
-   click the extension icon, and select **Start subtitles**.
+5. Refresh any YouTube or Vimeo tabs that were already open. Open a supported video
+   or livestream, click the extension icon, and select **Start subtitles**.
 
 Click **Stop** in the extension to stop capture. Press **Ctrl+C** in the launcher
 window to stop the project services. For a background launch, use
 `powershell -NoProfile -File stop.ps1` when finished.
 
 After updating source, stop and restart the service, reload the extension at
-`chrome://extensions`, and refresh YouTube. Reloading only the popup does not reload
-the running Python service or an already-injected content script.
+`chrome://extensions`, and refresh your YouTube or Vimeo tab. Reloading only the
+popup does not reload the running Python service or an already-injected content script.
 
 ## What it does
 
-- Captures the selected YouTube tab's audio, without requesting your microphone.
+- Captures the selected YouTube or Vimeo tab's audio, without requesting your microphone.
 - Uses local Whisper Turbo to recognize speech and detect the language of each
   buffered utterance.
 - Displays confidently recognized English directly, without translating it again.
@@ -51,6 +51,11 @@ the running Python service or an already-injected content script.
   text and three font sizes.
 - Stops capture when the video page changes, and bounds queued audio so a slow
   model does not accumulate an ever-growing delay.
+
+Vimeo support includes standard numeric video links, unlisted links, channel and
+group video pages, showcase/album video links, and direct `player.vimeo.com/video/…`
+links. Captions render inside the Vimeo player, including its fullscreen view.
+Vimeo embeds on unrelated websites and Vimeo event pages are not supported.
 
 The default profile is faster-whisper `turbo` with CUDA `int8_float16`, followed by
 `qwen3:4b-instruct-2507-q4_K_M`. This is the non-reasoning Apache-2.0 Qwen3 Instruct
@@ -80,6 +85,11 @@ This validates the text path, not end-to-end live-stream accuracy or GPU latency
 
 Browser integration has exercised real tab capture, local translated captions,
 fullscreen, stop/restart, and YouTube-style navigation using a controlled page.
+Vimeo integration checks use controlled Vimeo-origin pages and an embedded player
+to verify popup eligibility, caption delivery, late player loading, fullscreen,
+navigation, and stop. These checks supply capture state and captions directly;
+they do not establish live Vimeo audio capture or translation quality. Overlay
+attachment was also checked against a live Vimeo player using supplied captions.
 Bilingual routing has regression tests. The specific reported live-stream switching
 failure has not yet been replayed after the fix. The Qwen3 Instruct profile's live
 GPU latency and quality should be measured separately before claiming parity with
@@ -118,11 +128,11 @@ See [SECURITY.md](SECURITY.md) for reporting and handling exposed local credenti
 | Symptom | Next step |
 | --- | --- |
 | Local service not found | Run `start.bat`, wait for warm-up, then refresh the service status in the popup. |
-| No captions | Confirm Japanese or English speech is playing; refresh YouTube, then stop/start capture. Silence and music can be filtered out. |
+| No captions | Confirm Japanese or English speech is playing; refresh the YouTube or Vimeo tab, then stop/start capture. Silence and music can be filtered out. |
 | Gibberish after a language switch | Update, restart the service, reload the extension, and report a public timestamp if it persists. Short mixed buffers remain difficult. |
 | Port already in use | Stop the earlier project process or unrelated service on port 8765/11434. The launcher will not take over another installation. |
 | GPU memory error | Close GPU-heavy applications and restart the project service. |
-| Pairing error | Rerun setup, restart the service, reload the extension, and refresh YouTube. |
+| Pairing error | Rerun setup, restart the service, reload the extension, and refresh the video tab. |
 | Startup failure | Check `.runtime/subtitle-service.err.log`, removing sensitive material before sharing excerpts. |
 
 ## Development
@@ -136,6 +146,7 @@ installed locally rather than committed.
 npm ci
 .venv\Scripts\python.exe -m pip install -r requirements-dev.txt
 npm test
+npm run test:vimeo
 .venv\Scripts\python.exe -m pytest -q tests/test_backend.py
 powershell -NoProfile -File tests/test_launchers.ps1
 .venv\Scripts\python.exe -m scripts.check_release
@@ -150,11 +161,14 @@ The optional `npm run test:browser` check needs the service running and a public
 auto-detects installed Chrome on Windows; `CHROME_PATH` overrides the executable.
 Its debugging controls require a recent Chrome, beyond the extension's production
 minimum. The historical sample is from [JSUT basic5000](https://huggingface.co/datasets/FluidInference/JSUT-basic5000).
+`npm run test:vimeo` uses a temporary browser profile and a copy of the extension
+without local pairing configuration. It needs recent Chrome or Playwright Chromium
+but no local service, models, or audio fixture.
 
 ```text
-YouTube tab -> offscreen AudioWorklet -> PCM16 / local WebSocket
+Video tab -> offscreen AudioWorklet -> PCM16 / local WebSocket
             -> Whisper -> English passthrough or Ollama translation
-            -> subtitle overlay inside the YouTube player
+            -> subtitle overlay inside the YouTube or Vimeo player
 ```
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) before reporting bugs or opening a pull

@@ -29,9 +29,29 @@ function isSupportedVideo(url) {
   if (typeof url !== 'string') return false;
   try {
     const parsed = new URL(url);
-    return parsed.protocol === 'https:' &&
-      ['youtube.com', 'www.youtube.com'].includes(parsed.hostname) &&
-      (parsed.pathname === '/watch' || parsed.pathname.startsWith('/live/'));
+    if (parsed.protocol !== 'https:') return false;
+    if (['youtube.com', 'www.youtube.com'].includes(parsed.hostname)) {
+      return parsed.pathname === '/watch' || parsed.pathname.startsWith('/live/');
+    }
+    if (parsed.hostname === 'player.vimeo.com') return /^\/video\/\d+\/?$/.test(parsed.pathname);
+    return ['vimeo.com', 'www.vimeo.com'].includes(parsed.hostname) &&
+      /^\/(?:\d+(?:\/[a-zA-Z0-9]+)?|channels\/[^/]+\/\d+|groups\/[^/]+\/videos\/\d+|(?:showcase|album)\/\d+\/video\/\d+)\/?$/.test(parsed.pathname);
+  } catch {
+    return false;
+  }
+}
+
+function isTrustedContentSender(sender) {
+  if (!sender.tab) return false;
+  try {
+    const url = new URL(sender.url);
+    if (url.protocol !== 'https:') return false;
+    if (sender.frameId === 0) {
+      return ['youtube.com', 'www.youtube.com', 'vimeo.com', 'www.vimeo.com', 'player.vimeo.com'].includes(url.hostname);
+    }
+    const tabUrl = new URL(sender.tab.url);
+    return url.hostname === 'player.vimeo.com' && isSupportedVideo(sender.url) &&
+      ['vimeo.com', 'www.vimeo.com', 'player.vimeo.com'].includes(tabUrl.hostname) && isSupportedVideo(sender.tab.url);
   } catch {
     return false;
   }
@@ -85,7 +105,7 @@ async function ensureOffscreenDocument() {
     creatingOffscreen = chrome.offscreen.createDocument({
       url: OFFSCREEN_PATH,
       reasons: ['USER_MEDIA', 'AUDIO_PLAYBACK'],
-      justification: 'Capture the current YouTube tab audio, keep playback audible, and stream local audio frames for subtitle recognition.'
+      justification: 'Capture the current video tab audio, keep playback audible, and stream local audio frames for subtitle recognition.'
     }).finally(() => {
       creatingOffscreen = null;
     });
@@ -143,12 +163,12 @@ async function cancelledStartResult() {
 async function startSessionInternal(message, epoch) {
   const tabId = Number(message.tabId);
   const token = typeof message.token === 'string' ? message.token.trim() : '';
-  if (!Number.isInteger(tabId) || tabId < 0) throw new Error('Select a YouTube tab first.');
+  if (!Number.isInteger(tabId) || tabId < 0) throw new Error('Select a YouTube or Vimeo video tab first.');
   if (!token || token.length > 512) throw new Error('Enter a valid local pairing token.');
 
   const tab = await chrome.tabs.get(tabId);
   if (wasStartCancelled(epoch)) return cancelledStartResult();
-  if (!tab.active || !isSupportedVideo(tab.url)) throw new Error('Open a YouTube video or live stream in the active tab.');
+  if (!tab.active || !isSupportedVideo(tab.url)) throw new Error('Open a YouTube video, live stream, or Vimeo video in the active tab.');
 
   const { session: existing } = await getSession();
   if (wasStartCancelled(epoch)) return cancelledStartResult();
@@ -252,7 +272,7 @@ async function sendToContent(tabId, message) {
   try {
     await chrome.tabs.sendMessage(tabId, { ...message, target: 'content' });
   } catch {
-    // The content script is unavailable on non-video YouTube pages or while navigating.
+    // The content script may be unavailable while navigating.
   }
 }
 
@@ -441,12 +461,18 @@ async function handleMessage(message, sender) {
   if (typeof message.type === 'string' && message.type.startsWith('OFFSCREEN_') && sender.url !== OFFSCREEN_URL) {
     return { ok: false, error: 'Untrusted capture message.' };
   }
-  if (message.type === 'NAVIGATED') {
-    let hostname = '';
-    try { hostname = new URL(sender.url).hostname; } catch { /* rejected below */ }
-    if (!sender.tab || sender.frameId !== 0 || !['www.youtube.com', 'youtube.com'].includes(hostname)) {
-      return { ok: false, error: 'Untrusted page navigation message.' };
+  if (['NAVIGATED', 'CONTENT_READY'].includes(message.type) && !isTrustedContentSender(sender)) {
+    return { ok: false, error: 'Untrusted page message.' };
+  }
+
+  if (message.type === 'CONTENT_READY') {
+    const { session } = await getSession();
+    if (session?.phase === 'active' && session.tabId === sender.tab.id) {
+      await chrome.tabs.sendMessage(session.tabId, {
+        target: 'content', type: 'CAPTURE_STARTED', preferences: session.preferences
+      }, { frameId: sender.frameId }).catch(() => {});
     }
+    return { ok: true };
   }
 
   if (message.type === 'GET_STATUS') {
@@ -480,7 +506,7 @@ async function handleMessage(message, sender) {
   }
   if (message.type === 'NAVIGATED') {
     const { session } = await getSession();
-    if (session && sender.tab?.id === session.tabId && message.url !== session.url) {
+    if (session && sender.tab?.id === session.tabId && (sender.frameId !== 0 || message.url !== session.url)) {
       await stopSession('navigation');
     }
     return { ok: true };
