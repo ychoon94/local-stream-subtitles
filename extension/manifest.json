@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Local Stream Subtitles",
-  "version": "0.1.0",
-  "description": "Local Japanese-to-English subtitles for YouTube video and live streams.",
+  "version": "0.2.0",
+  "description": "Local Japanese-to-English subtitles for YouTube videos, live streams, and Vimeo videos.",
   "minimum_chrome_version": "116",
   "permissions": [
     "activeTab",
@@ -13,6 +13,9 @@
   "host_permissions": [
     "https://www.youtube.com/*",
     "https://youtube.com/*",
+    "https://vimeo.com/*",
+    "https://www.vimeo.com/*",
+    "https://player.vimeo.com/*",
     "http://127.0.0.1:8765/*"
   ],
   "background": {
@@ -29,6 +32,16 @@
         "https://youtube.com/*"
       ],
       "js": ["content.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://vimeo.com/*",
+        "https://www.vimeo.com/*",
+        "https://player.vimeo.com/video/*"
+      ],
+      "js": ["content.js"],
+      "all_frames": true,
       "run_at": "document_idle"
     }
   ]

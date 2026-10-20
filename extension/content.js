@@ -22,7 +22,17 @@
   }
 
   function findPlayer() {
-    return document.querySelector('#movie_player') || document.querySelector('ytd-player');
+    const hostname = new URL(location.href).hostname;
+    if (['youtube.com', 'www.youtube.com'].includes(hostname)) {
+      return document.querySelector('#movie_player') || document.querySelector('ytd-player');
+    }
+    const video = document.querySelector('video');
+    const player = document.querySelector('#player:not(iframe)') || video?.closest('.vp-video-wrapper') || video?.parentElement;
+    const fullscreen = document.fullscreenElement;
+    if (player && fullscreen && fullscreen.tagName !== 'VIDEO' && (player.contains(fullscreen) || fullscreen.contains(player))) {
+      return fullscreen;
+    }
+    return player;
   }
 
   function ensureOverlay() {
@@ -174,11 +184,13 @@
     const currentUrl = location.href;
     if (currentUrl === lastUrl) return;
     lastUrl = currentUrl;
+    if (!sessionActive) return;
     stopOverlay();
     chrome.runtime.sendMessage({ target: 'background', type: 'NAVIGATED', url: currentUrl }).catch(() => {});
   }
 
   chrome.runtime.onMessage.addListener(handleMessage);
+  document.addEventListener('fullscreenchange', () => ensureOverlay());
   window.addEventListener('popstate', checkNavigation, { passive: true });
   window.addEventListener('hashchange', checkNavigation, { passive: true });
   window.addEventListener('pagehide', () => {
@@ -190,4 +202,5 @@
   setInterval(() => {
     if (sessionActive && currentCaption && !overlayHost?.isConnected) ensureOverlay();
   }, 1500);
+  chrome.runtime.sendMessage({ target: 'background', type: 'CONTENT_READY' }).catch(() => {});
 })();

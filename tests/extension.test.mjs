@@ -11,13 +11,16 @@ const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '..');
 const { createResampler, int16Sample } = require(resolve(root, 'extension/audio-utils.js'));
 
-test('manifest limits capture access to YouTube and the fixed local service', async () => {
+test('manifest limits capture access to YouTube, Vimeo, and the fixed local service', async () => {
   const manifest = JSON.parse(await readFile(resolve(root, 'extension/manifest.json'), 'utf8'));
   assert.equal(manifest.manifest_version, 3);
   assert.equal(manifest.minimum_chrome_version, '116');
   assert.deepEqual(manifest.host_permissions, [
     'https://www.youtube.com/*',
     'https://youtube.com/*',
+    'https://vimeo.com/*',
+    'https://www.vimeo.com/*',
+    'https://player.vimeo.com/*',
     'http://127.0.0.1:8765/*'
   ]);
   assert.ok(manifest.permissions.includes('tabCapture'));
@@ -80,7 +83,7 @@ function makeEvent() {
   };
 }
 
-function makeWorkerHarness({ initialData = {}, offscreenState = null, hasOffscreen = false, fetchHealth } = {}) {
+function makeWorkerHarness({ initialData = {}, offscreenState = null, hasOffscreen = false, fetchHealth, tabUrl = 'https://www.youtube.com/watch?v=abc' } = {}) {
   const data = new Map(Object.entries(initialData));
   const events = {
     runtimeMessage: makeEvent(),
@@ -95,6 +98,7 @@ function makeWorkerHarness({ initialData = {}, offscreenState = null, hasOffscre
   let offscreenCloses = 0;
   let offscreenPresent = hasOffscreen;
   const contentMessages = [];
+  const contentDeliveries = [];
   const chrome = {
     runtime: {
       id: 'test-extension',
@@ -120,8 +124,11 @@ function makeWorkerHarness({ initialData = {}, offscreenState = null, hasOffscre
       }
     },
     tabs: {
-      async get(tabId) { tabGetCalls += 1; return { id: tabId, active: true, url: 'https://www.youtube.com/watch?v=abc' }; },
-      sendMessage: async (_tabId, message) => { contentMessages.push(message); },
+      async get(tabId) { tabGetCalls += 1; return { id: tabId, active: true, url: tabUrl }; },
+      sendMessage: async (tabId, message, options) => {
+        contentMessages.push(message);
+        contentDeliveries.push({ tabId, message, options });
+      },
       onRemoved: events.tabsRemoved,
       onUpdated: events.tabsUpdated
     },
@@ -161,6 +168,7 @@ function makeWorkerHarness({ initialData = {}, offscreenState = null, hasOffscre
     get offscreenStarts() { return offscreenStarts; },
     get offscreenCloses() { return offscreenCloses; },
     contentMessages,
+    contentDeliveries,
     async load() {
       const source = await readFile(resolve(root, 'extension/background.js'), 'utf8');
       vm.runInNewContext(source, sandbox, { filename: 'background.js' });
@@ -177,6 +185,29 @@ function makeWorkerHarness({ initialData = {}, offscreenState = null, hasOffscre
   }
   };
 }
+
+test('Vimeo video pages can start capture while unrelated pages and lookalike hosts cannot', async () => {
+  const cases = [
+    ['https://vimeo.com/76979871', true],
+    ['https://www.vimeo.com/76979871/abc123', true],
+    ['https://player.vimeo.com/video/76979871?h=abc123', true],
+    ['https://vimeo.com/channels/staffpicks/76979871', true],
+    ['https://vimeo.com/groups/shortfilms/videos/76979871', true],
+    ['https://vimeo.com/showcase/123/video/76979871', true],
+    ['https://vimeo.com/', false],
+    ['https://vimeo.com/settings', false],
+    ['https://vimeo.com.evil.example/76979871', false],
+    ['https://evil.example/video/76979871', false],
+    ['http://vimeo.com/76979871', false]
+  ];
+  for (const [tabUrl, supported] of cases) {
+    const harness = makeWorkerHarness({ tabUrl });
+    const send = await harness.load();
+    const result = await send({ target: 'background', type: 'START_REQUEST', tabId: 17, token: 'test-token' });
+    assert.equal(result.ok, supported, tabUrl);
+    assert.equal(harness.captureRequests, supported ? 1 : 0, tabUrl);
+  }
+});
 
 test('service worker rejects start and stop requests from YouTube content scripts', async () => {
   const harness = makeWorkerHarness();
@@ -197,6 +228,62 @@ test('service worker rejects start and stop requests from YouTube content script
   assert.equal(preferences.ok, false);
   assert.equal(harness.tabGetCalls, 0);
   assert.equal(harness.data.has('captureSession'), false);
+});
+
+test('late Vimeo player frames receive active preferences and frame navigation stops capture', async () => {
+  const tabUrl = 'https://vimeo.com/76979871';
+  const harness = makeWorkerHarness({ tabUrl });
+  const send = await harness.load();
+  await send({ target: 'background', type: 'START_REQUEST', tabId: 17, token: 'test-token', preferences: { fontSize: 'large' } });
+  const sender = {
+    id: 'test-extension', url: 'https://player.vimeo.com/video/76979871',
+    tab: { id: 17, url: tabUrl }, frameId: 3
+  };
+  const ready = await send({ target: 'background', type: 'CONTENT_READY' }, sender);
+  assert.equal(ready.ok, true);
+  const delivery = harness.contentDeliveries.at(-1);
+  assert.equal(delivery.tabId, 17);
+  assert.equal(delivery.options.frameId, 3);
+  assert.equal(delivery.message.type, 'CAPTURE_STARTED');
+  assert.equal(delivery.message.preferences.fontSize, 'large');
+
+  const sessionId = harness.data.get('captureSession').sessionId;
+  await send({ target: 'background', type: 'OFFSCREEN_SUBTITLE', sessionId, translated: 'Hello' }, {
+    id: 'test-extension', url: 'chrome-extension://test-extension/offscreen.html'
+  });
+  assert.equal(harness.contentDeliveries.at(-1).message.subtitle.translated, 'Hello');
+  assert.equal(harness.contentDeliveries.at(-1).options, undefined, 'Captions reach player frames through a tab broadcast');
+
+  const navigated = await send({ target: 'background', type: 'NAVIGATED', url: 'https://player.vimeo.com/video/123' }, sender);
+  assert.equal(navigated.ok, true);
+  assert.equal(harness.data.has('captureSession'), false);
+  assert.equal(harness.offscreenCloses, 1);
+});
+
+test('untrusted player frames cannot synchronize captions or stop another video session', async () => {
+  const tabUrl = 'https://vimeo.com/76979871';
+  const harness = makeWorkerHarness({ tabUrl });
+  const send = await harness.load();
+  await send({ target: 'background', type: 'START_REQUEST', tabId: 17, token: 'test-token' });
+  const senders = [
+    { url: 'https://player.vimeo.com.evil.example/video/123', tab: { id: 17, url: tabUrl }, frameId: 3 },
+    { url: 'https://player.vimeo.com/video/123', tab: { id: 17, url: 'https://evil.example/' }, frameId: 3 },
+    { url: 'https://www.youtube.com/watch?v=abc', tab: { id: 17, url: tabUrl }, frameId: 3 },
+    { url: 'http://vimeo.com/76979871', tab: { id: 17, url: tabUrl }, frameId: 0 }
+  ];
+  const deliveriesBefore = harness.contentDeliveries.length;
+  for (const sender of senders) {
+    for (const type of ['CONTENT_READY', 'NAVIGATED']) {
+      const result = await send({ target: 'background', type, url: '' }, { id: 'test-extension', ...sender });
+      assert.equal(result.ok, false, `${type} from ${sender.url}`);
+    }
+  }
+  await send({ target: 'background', type: 'CONTENT_READY' }, {
+    id: 'test-extension', url: 'https://player.vimeo.com/video/123', tab: { id: 99, url: tabUrl }, frameId: 3
+  });
+  assert.equal(harness.contentDeliveries.length, deliveriesBefore);
+  assert.equal(harness.data.get('captureSession').phase, 'active');
+  assert.equal(harness.offscreenCloses, 0);
 });
 
 test('a stop during the local health check cancels the start without leaving session state', async () => {
@@ -462,6 +549,7 @@ test('content subtitle messages render without recursion and survive overlay rea
   player.isDocumentRoot = true;
   const overlayHosts = [];
   const document = {
+    addEventListener() {},
     querySelector(selector) { return selector === '#movie_player' ? player : null; },
     createElement(tagName) {
       const element = new FakeElement(tagName);
@@ -482,6 +570,7 @@ test('content subtitle messages render without recursion and survive overlay rea
     chrome: { runtime: { onMessage: runtimeListeners, sendMessage: async () => undefined } },
     document,
     location: { href: 'https://www.youtube.com/watch?v=abc' },
+    URL,
     window: { addEventListener() {} },
     getComputedStyle: () => ({ position: 'static' }),
     requestAnimationFrame(callback) { callback(); },

@@ -1,12 +1,13 @@
 {
   "name": "local-stream-subtitles",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "license": "MIT",
-  "description": "Local GPU Japanese-to-English subtitles for YouTube",
+  "description": "Local GPU Japanese-to-English subtitles for YouTube and Vimeo",
   "scripts": {
     "test": "node --test tests/extension.test.mjs",
-    "test:browser": "node tests/browser-integration.cjs"
+    "test:browser": "node tests/browser-integration.cjs",
+    "test:vimeo": "node tests/vimeo-browser.cjs"
   },
   "devDependencies": {
     "playwright": "1.62.1"
