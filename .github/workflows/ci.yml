@@ -27,7 +27,7 @@ jobs:
       - name: Check source inventory
         run: python -m scripts.check_release
       - name: Test backend without GPU or models
-        run: python -m pytest -q tests/test_backend.py
+        run: python -m pytest -q tests
       - name: Test extension
         run: npm test
       - name: Check extension syntax
@@ -40,3 +40,4 @@ jobs:
       - name: Test launcher isolation without installing Ollama
         shell: powershell
         run: ./tests/test_launchers.ps1
+
