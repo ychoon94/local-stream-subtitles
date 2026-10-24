@@ -83,6 +83,25 @@ def test_manifest_rejects_changed_audio_before_replay(tmp_path):
         load_manifest(path)
 
 
+@pytest.mark.parametrize('identifiers', [['japanese', 'japanese'], [''], [None], [3]])
+def test_manifest_requires_unique_nonempty_sample_ids(tmp_path, identifiers):
+    # ID-keyed reports must never combine distinct recordings or lose their identity.
+    target = tmp_path / 'sample.wav'
+    pcm = bytes(4096)
+    with wave.open(str(target), 'wb') as stream:
+        stream.setparams((1, 2, 16000, 0, 'NONE', 'not compressed'))
+        stream.writeframes(pcm)
+    manifest = {'schema_version': 1, 'sample_rate': 16000,
+                'samples': [{'id': identifier, 'path': target.name,
+                             'sha256': hashlib.sha256(target.read_bytes()).hexdigest(),
+                             'pcm_sha256': hashlib.sha256(pcm).hexdigest()}
+                            for identifier in identifiers]}
+    path = tmp_path / 'manifest.json'
+    path.write_text(json.dumps(manifest), encoding='utf-8')
+    with pytest.raises(ValueError, match='unique non-empty sample IDs'):
+        load_manifest(path)
+
+
 def test_real_websocket_replay_records_asr_and_no_fake_browser_latency(tmp_path):
     settings = Settings(token='replay-test-token', latency_observability=True)
     engine = SubtitleEngine(settings)

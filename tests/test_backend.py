@@ -1,5 +1,6 @@
 import asyncio
 from collections import deque
+from dataclasses import replace
 from types import SimpleNamespace
 import time
 
@@ -9,9 +10,10 @@ from fastapi.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
 from backend.app import allowed_origin, create_app
-from backend.audio import MAX_FRAME_BYTES, SAMPLE_RATE, SpeechBuffer, Utterance
+from backend.audio import MAX_FRAME_BYTES, SAMPLE_RATE, SpeechBuffer, Utterance, create_speech_buffer
 from backend.config import Settings
 from backend.engine import SubtitleEngine, Transcription
+from backend.observability import clock_ms
 
 ORIGIN = 'chrome-extension://' + 'a' * 32
 SETTINGS = Settings(token='unit-test-pairing-token')
@@ -42,9 +44,10 @@ def test_continuous_audio_is_bounded():
 
 
 @pytest.mark.parametrize('raw', [b'', b'1', bytes(MAX_FRAME_BYTES + 2)], ids=['empty', 'odd', 'oversized'])
-def test_invalid_frames_rejected(raw):
+@pytest.mark.parametrize('mode', ['legacy', 'adaptive_rms'])
+def test_invalid_frames_rejected(raw, mode):
     with pytest.raises(ValueError):
-        SpeechBuffer().feed(raw)
+        create_speech_buffer(Settings(token='frame-limit-test', segmentation_mode=mode)).feed_many(raw)
 
 
 @pytest.mark.parametrize('origin', [None, 'null', 'https://www.youtube.com',
@@ -118,6 +121,60 @@ def test_second_tab_cannot_steal_active_session():
             with client.websocket_connect('/listen', headers={'Origin': ORIGIN}) as second:
                 second.send_json({'token': SETTINGS.token})
                 assert 'Another tab' in second.receive_json()['message']
+
+
+def test_authenticated_live_socket_uses_server_adaptive_limits_without_observation():
+    class Capturing(FakeEngine):
+        async def process(self, utterance, mode, history):
+            self.samples = utterance.samples
+            assert utterance.trace is None
+            return await super().process(utterance, mode, history)
+
+    settings = replace(SETTINGS, segmentation_mode='adaptive_rms', speech_max_seconds=1)
+    engine = Capturing()
+    with TestClient(create_app(engine, settings)) as client:
+        with client.websocket_connect('/listen', headers={'Origin': ORIGIN}) as socket:
+            # Client-supplied limits cannot override the trusted local settings.
+            socket.send_json({'token': settings.token, 'speech_max_seconds': 10})
+            assert socket.receive_json()['type'] == 'ready'
+            socket.send_bytes(pcm(1, .1))
+            assert socket.receive_json()['state'] == 'processing'
+            assert socket.receive_json()['translated'] == 'Hello'
+            assert socket.receive_json()['state'] == 'listening'
+    assert engine.calls == 1
+    assert len(engine.samples) == 31 * 512  # Hard cap at last full 32 ms decision.
+
+
+def test_multiple_endpoints_in_one_legal_packet_do_not_evict_an_idle_worker():
+    class Observed(FakeEngine):
+        async def process(self, utterance, mode, history):
+            utterance.trace['result_ready_ms'] = clock_ms()
+            return await super().process(utterance, mode, history)
+
+    settings = replace(SETTINGS, segmentation_mode='adaptive_rms', speech_max_seconds=1,
+                       latency_observability=True)
+    engine = Observed()
+    with TestClient(create_app(engine, settings)) as client:
+        with client.websocket_connect('/listen', headers={'Origin': ORIGIN}) as socket:
+            socket.send_json({'token': settings.token, 'observe': True})
+            socket.receive_json()
+            for _ in range(6):
+                socket.send_bytes(pcm(1, .1))
+                socket.send_json({'type': 'metrics_snapshot'})
+                while True:
+                    message = socket.receive_json()
+                    if message['type'] == 'metrics_snapshot':
+                        break
+            socket.send_json({'type': 'benchmark_end'})
+            while True:
+                message = socket.receive_json()
+                if message['type'] == 'benchmark_complete':
+                    break
+            # Seven capped segments plus the 16 ms EOF continuation.
+            assert message['counters']['segmented'] == 8
+            assert message['counters']['emitted'] == 8
+            assert message['counters']['dropped_queue'] == 0
+    assert engine.calls == 8
 
 
 def test_inference_error_is_sent_without_waiting_for_next_frame():

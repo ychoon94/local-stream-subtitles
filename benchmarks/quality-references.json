@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "japanese": {
+    "annotation": "benchmarks/baseline.json#/sources/japanese/reference",
+    "source": "https://huggingface.co/datasets/FluidInference/JSUT-basic5000/resolve/cd13cc9c9fe70d8d4f62ffe6fbbb872aef79835c/basic5000/BASIC5000_4503.wav",
+    "source_sha256": "2cbc696620062993d387a3a7bfe617947d2fd54c8d6a6b57c1881dab7931a236",
+    "normalized_characters": 17,
+    "scope": "One independently supplied JSUT sentence; orthography-sensitive CER, no broader accuracy inference."
+  },
+  "english": {
+    "dataset": "openslr/librispeech_asr",
+    "dataset_repository_revision_observed": "71cacbfb7e2354c4226d01e70d77d5fca3d04ba1",
+    "annotation_file": "clean/test/0000.parquet",
+    "dataset_url": "https://huggingface.co/datasets/openslr/librispeech_asr/tree/71cacbfb7e2354c4226d01e70d77d5fca3d04ba1/clean/test",
+    "viewer_query": "https://datasets-server.huggingface.co/rows?dataset=openslr%2Flibrispeech_asr&config=clean&split=test&offset=1700&length=100",
+    "utterance_id": "1089-134686-0000",
+    "speaker_id": 1089,
+    "chapter_id": 134686,
+    "reference_file_sha256": "3aa71780d0388e9f1667e815dd2a071461842bb398e6b9d02e102c494967a7e5",
+    "reference_text_sha256": "9fd81bc1b9772710b40a91d1592cbf7b8aeb44d262cfb371545ddc5aed1665fe",
+    "normalized_words": 28,
+    "source_audio_sha256": "30885601173f96b0d8ddd020dc959b055c6c1582b85a33e3fcab8c4b08ed94c2",
+    "dataset_audio_bytes": 183318,
+    "dataset_audio_byte_identical_to_frozen_source": true,
+    "decoded_mono_16k_samples": 166960,
+    "decoded_float32_sha256": "29ff16924c9577f5e335fcc7d64dd5d9ee261db7e9ec9c8eb7f8129b31cc1643",
+    "decoded_samples_identical": true,
+    "attribution": "LibriSpeech, Panayotov et al.; CC BY 4.0; https://www.openslr.org/12/",
+    "review": "Dataset-supplied annotation independent of measured ASR. No new independent human listening review; one sentence does not establish broad English WER."
+  }
+}

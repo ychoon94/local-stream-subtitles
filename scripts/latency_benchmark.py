@@ -11,6 +11,7 @@ import wave
 
 from backend.audio import SAMPLE_RATE
 from backend.config import load_settings
+from scripts.process_cleanup import terminate_owned_subprocess_tree
 
 ROOT = Path(__file__).resolve().parents[1]
 ORIGIN = 'chrome-extension://' + 'a' * 32
@@ -45,6 +46,10 @@ def load_manifest(path):
         raise ValueError('Expected version 1, mono 16 kHz PCM baseline manifest.')
     if not manifest.get('samples'):
         raise ValueError('Manifest has no samples.')
+    sample_ids = [sample.get('id') for sample in manifest['samples']]
+    if (any(not isinstance(identifier, str) or not identifier.strip() for identifier in sample_ids)
+            or len(set(sample_ids)) != len(sample_ids)):
+        raise ValueError('Manifest requires unique non-empty sample IDs.')
     for sample in manifest['samples']:
         target = (path.parent / sample['path']).resolve()
         if hashlib.sha256(target.read_bytes()).hexdigest() != sample['sha256']:
@@ -122,7 +127,8 @@ class GPUUsage:
                 if process and process.returncode is None:
                     process.kill()
                     await process.wait()
-                self.report['unavailable_reason'] = 'nvidia-smi unavailable or unsupported counters'
+                self.report.update(available=False,
+                                   unavailable_reason='nvidia-smi unavailable or unsupported counters')
                 return
             await asyncio.sleep(1)
 
@@ -206,8 +212,7 @@ async def run(args):
             try:
                 _, stderr = await process.communicate()
             except BaseException:
-                process.kill()
-                await process.wait()
+                await terminate_owned_subprocess_tree(process)
                 raise
             if process.returncode:
                 raise RuntimeError(stderr.decode(errors='replace')[-2000:] or 'Browser replay failed.')

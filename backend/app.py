@@ -11,7 +11,7 @@ from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from .audio import SpeechBuffer
+from .audio import create_speech_buffer
 from .config import load_settings
 from .engine import SubtitleEngine
 from .observability import SessionMetrics, clock_ms, clock_resolution_ms, trace_durations
@@ -130,7 +130,7 @@ def create_app(engine=None, settings=None):
                         **({'observability': True} if observing else {})})
             queue = asyncio.Queue(maxsize=1)
             history = deque(maxlen=3)
-            buffer = SpeechBuffer(observe=observing)
+            buffer = create_speech_buffer(settings, observe=observing)
             sequence = 0
 
             async def emit_trace(trace, outcome):
@@ -254,8 +254,7 @@ def create_app(engine=None, settings=None):
                     continue
                 if raw is None:
                     raise ValueError('Audio must use binary PCM16 frames.')
-                utterance = buffer.feed(raw)
-                if utterance:
+                for utterance in buffer.feed_many(raw):
                     if observing:
                         await enqueue(utterance)
                     else:
@@ -264,6 +263,10 @@ def create_app(engine=None, settings=None):
                             queue.task_done()
                             await send({'type': 'status', 'state': 'processing', 'message': 'Skipping queued audio to stay live.'})
                         queue.put_nowait(utterance)
+                    # A single legal packet can finalize multiple short segments.
+                    # Give an idle worker a chance to take the first one before
+                    # applying the pending-queue eviction policy to the next.
+                    await asyncio.sleep(0)
         except WebSocketDisconnect:
             pass
         except Exception as error:
