@@ -96,6 +96,7 @@ function makeWorkerHarness({ initialData = {}, offscreenState = null, hasOffscre
   let captureRequests = 0;
   let offscreenStarts = 0;
   let offscreenCloses = 0;
+  const offscreenMessages = [];
   let offscreenPresent = hasOffscreen;
   const contentMessages = [];
   const contentDeliveries = [];
@@ -110,6 +111,8 @@ function makeWorkerHarness({ initialData = {}, offscreenState = null, hasOffscre
         if (message.type === 'GET_STATE') return typeof offscreenState === 'function' ? offscreenState() : offscreenState;
         if (message.type === 'START_CAPTURE') { offscreenStarts += 1; return { ok: true }; }
         if (message.type === 'STOP_CAPTURE') return { ok: true };
+        if (message.type === 'REPORT_RENDER') { offscreenMessages.push(message); return { ok: true }; }
+        if (message.type === 'GET_METRICS') return { observability: false, events: [], counters: {}, benchmarkComplete: false };
         return undefined;
       },
       getContexts: async () => offscreenPresent ? [{ documentUrl: 'chrome-extension://test-extension/offscreen.html' }] : []
@@ -167,6 +170,7 @@ function makeWorkerHarness({ initialData = {}, offscreenState = null, hasOffscre
     get captureRequests() { return captureRequests; },
     get offscreenStarts() { return offscreenStarts; },
     get offscreenCloses() { return offscreenCloses; },
+    offscreenMessages,
     contentMessages,
     contentDeliveries,
     async load() {
@@ -258,6 +262,42 @@ test('late Vimeo player frames receive active preferences and frame navigation s
   assert.equal(navigated.ok, true);
   assert.equal(harness.data.has('captureSession'), false);
   assert.equal(harness.offscreenCloses, 1);
+});
+
+test('render acknowledgements require the active trusted tab and session', async () => {
+  const harness = makeWorkerHarness();
+  const send = await harness.load();
+  await send({ target: 'background', type: 'START_REQUEST', tabId: 17, token: 'test-token' });
+  const sessionId = harness.data.get('captureSession').sessionId;
+  const sender = {
+    id: 'test-extension', url: 'https://www.youtube.com/watch?v=abc',
+    tab: { id: 17, url: 'https://www.youtube.com/watch?v=abc' }, frameId: 0
+  };
+  const acknowledgement = {
+    target: 'background', type: 'SUBTITLE_RENDERED', sessionId, segment_id: 4,
+    first_readable_browser_ms: 1000, final_browser_ms: 1000
+  };
+
+  assert.equal((await send(acknowledgement, sender)).ok, true);
+  assert.equal(harness.offscreenMessages.length, 1);
+  assert.equal(harness.offscreenMessages[0].segment_id, 4);
+  assert.equal(harness.offscreenMessages[0].sessionId, sessionId);
+
+  assert.equal((await send({ ...acknowledgement, sessionId: 'stale-session' }, sender)).ignored, true);
+  assert.equal((await send(acknowledgement, { ...sender, tab: { ...sender.tab, id: 99 } })).ignored, true);
+  assert.equal((await send(acknowledgement, { ...sender, url: 'https://youtube.com.evil.example/watch?v=abc' })).ok, false);
+  assert.equal(harness.offscreenMessages.length, 1);
+});
+
+test('observability metrics controls accept messages only from the service worker', async () => {
+  const harness = makeWorkerHarness();
+  const send = await harness.load();
+  const command = { target: 'background', type: 'GET_METRICS' };
+  assert.equal((await send(command)).error, 'Observability controls are available to the benchmark runner only.');
+  const result = await send(command, {
+    id: 'test-extension', url: 'chrome-extension://test-extension/background.js', frameId: 0
+  });
+  assert.equal(result.observability, false);
 });
 
 test('untrusted player frames cannot synchronize captions or stop another video session', async () => {
@@ -477,6 +517,182 @@ test('offscreen stop tombstone prevents a late capture start from opening the mi
   assert.equal(mediaRequests, 0);
 });
 
+test('clock calibration maps browser timestamps into server time with a measured uncertainty', async () => {
+  const listeners = makeEvent();
+  const sandbox = {
+    chrome: { runtime: { id: 'test-extension', getURL: path => `chrome-extension://test-extension/${path}`, onMessage: listeners } },
+    performance: { timeOrigin: 0, now: () => 0 },
+    Map,
+    Set,
+    Promise,
+    Number,
+    Array,
+    Object,
+    Math,
+    setTimeout,
+    clearTimeout
+  };
+  const source = await readFile(resolve(root, 'extension/offscreen.js'), 'utf8');
+  const calculate = vm.runInNewContext(`${source}\ncalculateClockCalibration`, sandbox, { filename: 'offscreen.js' });
+  const clientSentMs = 1700000000000;
+  const calibration = calculate(clientSentMs, clientSentMs - 299990, clientSentMs - 299989, clientSentMs + 22);
+
+  assert.equal(calibration.offsetMs, -300000.5);
+  assert.equal(calibration.uncertaintyMs, 10.5);
+  const calibratedResolution = calculate(clientSentMs, clientSentMs - 299990, clientSentMs - 299989, clientSentMs + 22, 16.625);
+  assert.equal(calibratedResolution.uncertaintyMs, 27.125,
+    'Reported server resolution and the browser precision allowance widen the confidence bound.');
+  assert.equal(calculate(10, 20, 21, 9), null, 'Impossible negative round trips are discarded.');
+  assert.equal(calculate(10, 20, 21, Number.NaN), null, 'Non-finite clock samples are discarded.');
+  assert.equal(calculate(10, 20, 21, 22, Number.NaN), null, 'Non-finite clock resolution is discarded.');
+  assert.equal(calculate(10, 20, 21, 22, 101), null, 'Implausibly large clock resolution is discarded.');
+});
+
+test('production clock calibration includes server resolution and browser timestamp precision', async () => {
+  const listeners = makeEvent();
+  const sandbox = {
+    chrome: { runtime: { id: 'test-extension', getURL: path => `chrome-extension://test-extension/${path}`, onMessage: listeners } },
+    performance: { timeOrigin: 1700000000000, now: () => 20 },
+    WebSocket: { OPEN: 1 },
+    Map,
+    Set,
+    Promise,
+    Number,
+    Array,
+    Object,
+    Math,
+    JSON,
+    queueMicrotask,
+    setTimeout,
+    clearTimeout
+  };
+  const source = await readFile(resolve(root, 'extension/offscreen.js'), 'utf8');
+  const api = vm.runInNewContext(
+    `${source}\n({ calibrateClock, setActiveSession(value) { activeSession = value; } })`,
+    sandbox,
+    { filename: 'offscreen.js' }
+  );
+  const record = {
+    observability: true, clockSyncPending: new Map(),
+    socket: {
+      readyState: 1,
+      send(serialized) {
+        const request = JSON.parse(serialized);
+        queueMicrotask(() => record.clockSyncPending.get(request.client_sent_ms)?.({
+          server_received_ms: request.client_sent_ms - 299990,
+          server_sent_ms: request.client_sent_ms - 299989,
+          clock_resolution_ms: 15.625,
+          client_received_ms: request.client_sent_ms + 22
+        }));
+      }
+    }
+  };
+  api.setActiveSession(record);
+
+  await api.calibrateClock(record);
+
+  assert.equal(record.clockUncertaintyMs, 27.125,
+    'Production calibration adds the reply resolution (15.625 ms), browser precision allowance (1 ms), and half the measured network RTT (10.5 ms).');
+});
+
+test('benchmark metrics retain supported outcomes and report bounded event loss', async () => {
+  const listeners = makeEvent();
+  const sandbox = {
+    chrome: { runtime: { id: 'test-extension', getURL: path => `chrome-extension://test-extension/${path}`, onMessage: listeners } },
+    performance: { timeOrigin: 0, now: () => 0 },
+    Map,
+    Set,
+    Promise,
+    Number,
+    Array,
+    Object,
+    Math,
+    setTimeout,
+    clearTimeout
+  };
+  const source = await readFile(resolve(root, 'extension/offscreen.js'), 'utf8');
+  const api = vm.runInNewContext(
+    `${source}\n({ recordMetrics, setActiveSession(value) { activeSession = value; } })`,
+    sandbox,
+    { filename: 'offscreen.js' }
+  );
+  const record = { metricEvents: [], lostEvents: 0, metricCounters: {}, benchmarkComplete: false };
+  api.recordMetrics(record, {
+    type: 'metrics',
+    event: { segment_id: 1, outcome: 'emitted', source: 'source_eof', transcript: 'private text', timings: { asr_ms: 7 } },
+    counters: { emitted: 1 }
+  });
+  assert.equal(record.metricEvents[0].outcome, 'emitted');
+  assert.equal(record.metricEvents[0].source, 'source_eof');
+  assert.equal(Object.hasOwn(record.metricEvents[0], 'transcript'), false);
+  api.recordMetrics(record, { type: 'metrics', event: { segment_id: 1, outcome: 'asr_failed', source: 'source_eof' } });
+  for (let segmentId = 2; segmentId <= 511; segmentId += 1) {
+    api.recordMetrics(record, { type: 'metrics', event: { segment_id: segmentId, outcome: 'empty_asr', source: 'live' } });
+  }
+  api.recordMetrics(record, { type: 'metrics', event: { segment_id: 513, outcome: 'rendered', source: 'live' } });
+  api.setActiveSession(record);
+
+  let result;
+  const keepChannelOpen = listeners.listeners[0]({ target: 'offscreen', type: 'GET_METRICS' }, {
+    id: 'test-extension', url: 'chrome-extension://test-extension/background.js'
+  }, value => { result = value; });
+
+  assert.equal(keepChannelOpen, false);
+  assert.equal(result.events.length, 512);
+  assert.equal(result.lostEvents, 1);
+  assert.equal(result.events[0].segment_id, 1);
+  assert.equal(result.events[0].outcome, 'asr_failed');
+  assert.equal(result.events[0].source, 'source_eof');
+  assert.equal(result.events[1].source, 'live');
+  assert.equal(result.events.at(-1).outcome, 'rendered');
+  assert.equal(result.counters.emitted, 1);
+  assert.equal(Object.hasOwn(result.events[0], 'transcript'), false);
+});
+
+test('ending a benchmark flushes pending audio drops before requesting completion', async () => {
+  const listeners = makeEvent();
+  const sandbox = {
+    chrome: { runtime: { id: 'test-extension', getURL: path => `chrome-extension://test-extension/${path}`, onMessage: listeners } },
+    performance: { timeOrigin: 0, now: () => 0 },
+    Map,
+    Set,
+    Promise,
+    Number,
+    Array,
+    Object,
+    Math,
+    JSON,
+    WebSocket: { OPEN: 1 },
+    setTimeout,
+    clearTimeout
+  };
+  const source = await readFile(resolve(root, 'extension/offscreen.js'), 'utf8');
+  const api = vm.runInNewContext(
+    `${source}\n({ setActiveSession(value) { activeSession = value; } })`,
+    sandbox,
+    { filename: 'offscreen.js' }
+  );
+  const sent = [];
+  const record = {
+    sessionId: 'session-1', observability: true, droppedFrames: 3,
+    socket: { readyState: 1, send(value) { sent.push(JSON.parse(value)); } }
+  };
+  api.setActiveSession(record);
+
+  let response;
+  const keepChannelOpen = listeners.listeners[0]({ target: 'offscreen', type: 'END_BENCHMARK' }, {
+    id: 'test-extension', url: 'chrome-extension://test-extension/background.js'
+  }, value => { response = value; });
+
+  assert.equal(keepChannelOpen, false);
+  assert.deepEqual(sent, [
+    { type: 'audio_dropped', frames: 3, samples: 6144 },
+    { type: 'benchmark_end' }
+  ]);
+  assert.equal(record.droppedFrames, 0);
+  assert.equal(response.ok, true);
+});
+
 test('content subtitle messages render without recursion and survive overlay reattachment', async () => {
   class FakeElement {
     constructor(tagName) {
@@ -566,14 +782,18 @@ test('content subtitle messages render without recursion and survive overlay rea
   };
   const runtimeListeners = makeEvent();
   const intervals = [];
+  const animationFrames = [];
+  const runtimeMessages = [];
+  let opacity = 0;
   const sandbox = {
-    chrome: { runtime: { onMessage: runtimeListeners, sendMessage: async () => undefined } },
+    chrome: { runtime: { onMessage: runtimeListeners, sendMessage: async message => runtimeMessages.push(message) } },
     document,
     location: { href: 'https://www.youtube.com/watch?v=abc' },
     URL,
     window: { addEventListener() {} },
-    getComputedStyle: () => ({ position: 'static' }),
-    requestAnimationFrame(callback) { callback(); },
+    getComputedStyle: () => ({ position: 'static', opacity: String(opacity) }),
+    performance: { timeOrigin: 1000000, now: () => 42 },
+    requestAnimationFrame(callback) { animationFrames.push(callback); },
     setInterval(callback) { intervals.push(callback); return intervals.length; },
     setTimeout() { return 1; },
     clearTimeout() {},
@@ -585,17 +805,43 @@ test('content subtitle messages render without recursion and survive overlay rea
   const source = await readFile(resolve(root, 'extension/content.js'), 'utf8');
   vm.runInNewContext(source, sandbox, { filename: 'content.js' });
   const onMessage = runtimeListeners.listeners[0];
+  const runNextFrame = () => animationFrames.shift()?.();
+  const drainFrames = () => {
+    let count = 0;
+    while (animationFrames.length && count < 200) {
+      runNextFrame();
+      count += 1;
+    }
+  };
 
   assert.doesNotThrow(() => onMessage({
     target: 'content',
     type: 'CAPTURE_STARTED',
+    sessionId: 'session-1',
     preferences: { showJapanese: true, fontSize: 'medium' }
   }));
   assert.doesNotThrow(() => onMessage({
     target: 'content',
     type: 'SUBTITLE',
-    subtitle: { original: 'こんにちは', translated: '<img src=x onerror=alert(1)>' }
+    sessionId: 'stale-session',
+    subtitle: { original: '', translated: 'Stale', telemetry: { segment_id: 6 } }
   }));
+  assert.equal(overlayHosts[0].shadowRoot.querySelector('.translated').textContent, '');
+  assert.doesNotThrow(() => onMessage({
+    target: 'content', type: 'SUBTITLE', sessionId: 'session-1',
+    subtitle: { original: 'こんにちは', translated: 'Legacy final subtitle' }
+  }));
+  runNextFrame();
+  assert.equal(runtimeMessages.filter(message => message.type === 'SUBTITLE_RENDERED').length, 0,
+    'Final-only captions keep rendering when timing metadata is absent.');
+  assert.doesNotThrow(() => onMessage({
+    target: 'content',
+    type: 'SUBTITLE',
+    sessionId: 'session-1',
+    subtitle: { original: 'こんにちは', translated: '<img src=x onerror=alert(1)>', telemetry: { segment_id: 7 } }
+  }));
+  runNextFrame();
+  runNextFrame();
 
   const firstHost = overlayHosts.at(-1);
   assert.ok(firstHost);
@@ -603,10 +849,23 @@ test('content subtitle messages render without recursion and survive overlay rea
   assert.equal(firstHost.shadowRoot.querySelector('.original').textContent, 'こんにちは');
   assert.equal(firstHost.shadowRoot.querySelector('.translated').textContent, '<img src=x onerror=alert(1)>');
   assert.ok(firstHost.shadowRoot.querySelector('.stack').classList.contains('visible'));
+  runNextFrame();
+  assert.equal(runtimeMessages.filter(message => message.type === 'SUBTITLE_RENDERED').length, 0,
+    'A caption is not reported while its foreground opacity is below the readability threshold.');
+
+  opacity = 1;
+  drainFrames();
+  const acknowledgements = runtimeMessages.filter(message => message.type === 'SUBTITLE_RENDERED');
+  assert.equal(acknowledgements.length, 1);
+  assert.equal(acknowledgements[0].first_readable_browser_ms, 1000042);
+  assert.equal(acknowledgements[0].final_browser_ms, 1000042);
 
   firstHost.remove();
   assert.doesNotThrow(() => intervals[1]());
   const replacementHost = overlayHosts.at(-1);
   assert.equal(replacementHost.parentElement, player);
   assert.equal(replacementHost.shadowRoot.querySelector('.translated').textContent, '<img src=x onerror=alert(1)>');
+  drainFrames();
+  assert.equal(runtimeMessages.filter(message => message.type === 'SUBTITLE_RENDERED').length, 1,
+    'Reattaching the same caption does not emit a second render acknowledgement.');
 });

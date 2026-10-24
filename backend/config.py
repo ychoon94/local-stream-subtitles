@@ -19,6 +19,7 @@ class Settings:
     device: str = 'cuda'
     compute_type: str = 'int8_float16'
     sample_rate: int = 16000
+    latency_observability: bool = False
 
 
 def load_settings() -> Settings:

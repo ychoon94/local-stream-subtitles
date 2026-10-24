@@ -9,6 +9,7 @@ import httpx
 import numpy as np
 
 from .config import ROOT, Settings, configure_gpu_libraries
+from .observability import clock_ms, trace_durations
 
 
 ENGLISH_PASSTHROUGH_THRESHOLD = 0.8
@@ -122,7 +123,12 @@ class SubtitleEngine:
         return translated
 
     async def process(self, utterance, mode: str, history: deque) -> dict | None:
+        trace = utterance.trace
+        if trace is not None:
+            trace['dequeued_ms'] = round(clock_ms(), 3)
         async with self.lock:
+            if trace is not None:
+                trace['inference_started_ms'] = round(clock_ms(), 3)
             # Shield the native call: cancelling a WebSocket must not release the
             # GPU lock while CTranslate2 is still executing in its worker thread.
             job = asyncio.create_task(asyncio.to_thread(self.transcribe, utterance.samples, mode))
@@ -139,22 +145,40 @@ class SubtitleEngine:
                 if not job.cancelled():
                     job.exception()  # Observe a failed native call without masking cancellation.
                 raise
+            if trace is not None:
+                asr_finished_at = clock_ms()
+                trace['asr_finished_ms'] = round(asr_finished_at, 3)
             if not transcription.text:
+                if trace is not None:
+                    trace['outcome'] = 'empty_asr'
+                    trace['result_ready_ms'] = round(clock_ms(), 3)
                 return None
+            if trace is not None:
+                trace['translation_started_ms'] = round(asr_finished_at, 3)
+                trace['translation_finished_ms'] = round(asr_finished_at, 3)
             if mode == 'direct':
                 translated, original = transcription.text, ''
             else:
                 if _should_passthrough_as_english(transcription):
                     translated, original = transcription.text, ''
                 else:
+                    if trace is not None:
+                        trace['translation_started_ms'] = round(clock_ms(), 3)
                     translated = await self.translate(transcription.text, history)
+                    if trace is not None:
+                        trace['translation_finished_ms'] = round(clock_ms(), 3)
                     original = transcription.text
                 history.append({
                     'original': transcription.text,
                     'source_language': transcription.language,
                     'en': translated,
                 })
-            return {
+            result = {
                 'type': 'subtitle', 'original': original, 'translated': translated,
                 'latency_ms': round((time.monotonic() - utterance.started_at) * 1000),
             }
+            if trace is not None:
+                trace['outcome'] = 'emitted'
+                trace['result_ready_ms'] = round(clock_ms(), 3)
+                result['timings'] = trace_durations(trace)
+            return result

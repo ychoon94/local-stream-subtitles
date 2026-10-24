@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "recipe": "latency-smoke-v1",
+  "sample_rate": 16000,
+  "frame_samples": 2048,
+  "sources": {
+    "japanese": {
+      "url": "https://huggingface.co/datasets/FluidInference/JSUT-basic5000/resolve/cd13cc9c9fe70d8d4f62ffe6fbbb872aef79835c/basic5000/BASIC5000_4503.wav",
+      "sha256": "2cbc696620062993d387a3a7bfe617947d2fd54c8d6a6b57c1881dab7931a236",
+      "terms": "JSUT: personal use/non-commercial research; see source README_en.txt. Not MIT.",
+      "reference": "羨ましいほどの落ち着きぶりであった。"
+    },
+    "english": {
+      "url": "https://huggingface.co/datasets/Narsil/asr_dummy/resolve/8d141c84e3f84c54cd7bbaa851d24edd0f559734/1.flac",
+      "sha256": "30885601173f96b0d8ddd020dc959b055c6c1582b85a33e3fcab8c4b08ed94c2",
+      "terms": "LibriSpeech mirror; CC BY 4.0, Panayotov et al., https://www.openslr.org/12/",
+      "reference": null
+    }
+  },
+  "samples": [
+    {
+      "id": "japanese",
+      "category": "japanese",
+      "path": "../.runtime/latency-baseline/japanese-replay.wav",
+      "sha256": "74e5ddaf0ebae54e59bc942af84cac503a93d9348b3d7a9bfe6f7ae2b0d2dcd8",
+      "pcm_sha256": "be776f9e0e2a4f25d9d77d3a934bb3c5bfc28dbfece782e88f6c181bc1ff0b14",
+      "audio_seconds": 4.356,
+      "synthetic": false
+    },
+    {
+      "id": "english",
+      "category": "english",
+      "path": "../.runtime/latency-baseline/english-replay.wav",
+      "sha256": "999e3ec1609be148b13da7af65fe05ed184165dfc99684d8b67b498f864a2209",
+      "pcm_sha256": "1c99901ddaa44ad2f2fcc352a36c40540b7085555d39dd3337d4398b79551bfc",
+      "audio_seconds": 11.971,
+      "synthetic": false
+    },
+    {
+      "id": "mixed",
+      "category": "mixed",
+      "path": "../.runtime/latency-baseline/mixed-replay.wav",
+      "sha256": "0e07d23304379125af04ff7f8611cace62a600fa9e9e6d48333e6cfaf1cc5eb8",
+      "pcm_sha256": "d67fcd7ea518885dfb50c51eca8f93f85a91b2d40857c4719a742389b72e689f",
+      "audio_seconds": 15.303,
+      "synthetic": true
+    },
+    {
+      "id": "game-audio",
+      "category": "game-audio",
+      "path": "../.runtime/latency-baseline/game-audio-replay.wav",
+      "sha256": "43368d6945828dab2fdfbb79ca72da762f800db014f78ac2882f092d5e57b6fb",
+      "pcm_sha256": "5fcce566968cb4ed007cd4bd76f9a85a20dfc5b517719d826ec773b0efe3e623",
+      "audio_seconds": 15.303,
+      "synthetic": true
+    }
+  ],
+  "limits": "Small latency smoke set, not an accuracy or natural gaming benchmark. Mixed speech is concatenated; game effects are synthesized. English reference has not been independently reviewed."
+}

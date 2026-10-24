@@ -1,5 +1,6 @@
 const OFFSCREEN_PATH = 'offscreen.html';
 const OFFSCREEN_URL = chrome.runtime.getURL(OFFSCREEN_PATH);
+const BACKGROUND_URL = chrome.runtime.getURL('background.js');
 const HEALTH_URL = 'http://127.0.0.1:8765/health';
 const SESSION_KEY = 'captureSession';
 const STATUS_KEY = 'captureStatus';
@@ -227,7 +228,7 @@ async function startSessionInternal(message, epoch) {
 
     await writeSession({ ...session, phase: 'active' });
     const status = await writeStatus({ state: 'listening', message: 'Listening · subtitles will appear on the video', mode: preferences.mode });
-    await sendToContent(tabId, { type: 'CAPTURE_STARTED', preferences });
+    await sendToContent(tabId, { type: 'CAPTURE_STARTED', sessionId: session.sessionId, preferences });
     return { ok: true, status };
   } catch (error) {
     const latest = await getSession();
@@ -347,7 +348,7 @@ async function recoverStartingSession(session, status, generation) {
       const activeStatus = await writeStatus(recoveredStatus);
       const { session: activeSession, status: currentStatus } = await getSession();
       if (lifecycleGeneration !== generation || stoppingOperation || activeSession?.sessionId !== session.sessionId || activeSession.phase !== 'active') return currentStatus;
-      await sendToContent(session.tabId, { type: 'CAPTURE_STARTED', preferences: session.preferences });
+      await sendToContent(session.tabId, { type: 'CAPTURE_STARTED', sessionId: session.sessionId, preferences: session.preferences });
       return activeStatus;
     }
   }
@@ -411,11 +412,15 @@ async function handleOffscreenMessage(message) {
     if (!translated.trim()) return { ok: true, ignored: true };
     await sendToContent(session.tabId, {
       type: 'SUBTITLE',
+      sessionId: session.sessionId,
       subtitle: {
         original,
         translated,
         latencyMs: Number.isFinite(message.latency_ms) ? Math.max(0, Math.min(message.latency_ms, 600000)) : null,
-        id: typeof message.id === 'string' ? message.id.slice(0, 80) : ''
+        id: typeof message.id === 'string' ? message.id.slice(0, 80) : '',
+        telemetry: message.telemetry && Number.isSafeInteger(message.telemetry.segment_id)
+          ? { segment_id: message.telemetry.segment_id }
+          : null
       }
     });
     return { ok: true };
@@ -454,6 +459,11 @@ async function handleMessage(message, sender) {
   if (!message || typeof message !== 'object') return { ok: false, error: 'Invalid request.' };
   if (sender.id !== chrome.runtime.id) return { ok: false, error: 'Untrusted extension message.' };
 
+  if (['GET_METRICS', 'END_BENCHMARK'].includes(message.type)) {
+    if (sender.url !== BACKGROUND_URL) return { ok: false, error: 'Observability controls are available to the benchmark runner only.' };
+    return sendToOffscreen({ type: message.type });
+  }
+
   const popupUrl = chrome.runtime.getURL('popup.html');
   if (['GET_STATUS', 'START_REQUEST', 'STOP_REQUEST', 'SET_OVERLAY_PREFERENCES'].includes(message.type) && sender.url !== popupUrl) {
     return { ok: false, error: 'This action is available from the extension popup.' };
@@ -461,15 +471,32 @@ async function handleMessage(message, sender) {
   if (typeof message.type === 'string' && message.type.startsWith('OFFSCREEN_') && sender.url !== OFFSCREEN_URL) {
     return { ok: false, error: 'Untrusted capture message.' };
   }
-  if (['NAVIGATED', 'CONTENT_READY'].includes(message.type) && !isTrustedContentSender(sender)) {
+  if (['NAVIGATED', 'CONTENT_READY', 'SUBTITLE_RENDERED'].includes(message.type) && !isTrustedContentSender(sender)) {
     return { ok: false, error: 'Untrusted page message.' };
+  }
+
+  if (message.type === 'SUBTITLE_RENDERED') {
+    const { session } = await getSession();
+    if (session?.phase !== 'active' || message.sessionId !== session.sessionId || sender.tab?.id !== session.tabId ||
+        !Number.isSafeInteger(message.segment_id) || message.segment_id < 1 ||
+        !Number.isFinite(message.first_readable_browser_ms) ||
+        !Number.isFinite(message.final_browser_ms) ||
+        message.final_browser_ms < message.first_readable_browser_ms) {
+      return { ok: false, ignored: true };
+    }
+    return chrome.runtime.sendMessage({
+      target: 'offscreen', type: 'REPORT_RENDER', sessionId: session.sessionId,
+      segment_id: message.segment_id,
+      first_readable_browser_ms: message.first_readable_browser_ms,
+      final_browser_ms: message.final_browser_ms
+    });
   }
 
   if (message.type === 'CONTENT_READY') {
     const { session } = await getSession();
     if (session?.phase === 'active' && session.tabId === sender.tab.id) {
       await chrome.tabs.sendMessage(session.tabId, {
-        target: 'content', type: 'CAPTURE_STARTED', preferences: session.preferences
+        target: 'content', type: 'CAPTURE_STARTED', sessionId: session.sessionId, preferences: session.preferences
       }, { frameId: sender.frameId }).catch(() => {});
     }
     return { ok: true };
