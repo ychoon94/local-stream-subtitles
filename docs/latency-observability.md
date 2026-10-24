@@ -109,15 +109,19 @@ bounds. A sub-millisecond delivery estimate is not more precise than its bound.
 | `queue_ms` | Enqueue request to engine entry, including the processing-status handoff. |
 | `lock_ms` | Engine entry to acquiring the inference lock. |
 | `asr_ms` | Complete native ASR call including thread dispatch and lazy segment iteration. |
-| `translation_ms` | Translation request/output handling; 0 for successful direct/English bypass, null when unobserved. |
+| `translation_ms` | Translation request/output handling; 0 for successful direct/English bypass, null when unobserved or an attempted translation did not complete. |
 | `server_total_ms` | Estimated speech-frame onset to result construction. |
 | `delivery_ms` | WebSocket send initiation to offscreen receipt, after calibration. |
 | `display_ms` | Offscreen receipt through extension relay and fully visible browser frame. |
-| `first_readable_ms` | Estimated speech-frame onset through the first foreground animation frame with connected, nonempty caption text and opacity at least 0.99. |
+| `first_readable_ms` | Estimated speech-frame onset through the first foreground animation frame with a nonempty caption box intersecting the frame viewport, visible CSS ancestors, and cumulative opacity at least 0.99. |
 | `final_ms` | Visibility of the final caption; equal to first-readable in the current final-only pipeline. |
 
 The readable marker is a conservative rendering proxy after the existing fade,
 not a compositor/pixel presentation guarantee or a human reading-speed measure.
+CSS-hidden players/ancestors, transparent ancestors and offscreen caption boxes
+cannot acknowledge rendering. Retries are capped at 180 animation frames. The
+check does not prove pixel-level occlusion, ancestor clipping, or visibility of an
+outer cross-origin iframe; such presentation constraints require separate checks.
 The onset is a frame-level backend estimate: upstream tab capture, AudioWorklet
 batching, resampling and inbound socket delay are not directly timed. Quantization
 within a 128 ms frame remains even when clock calibration is accurate. These are
@@ -150,6 +154,10 @@ the browser replay. An emitted caption that never becomes visible has no display
 latency: coverage/unobserved counts and `measurement_complete` expose it. After
 draining inference, the runner allows two seconds for render acknowledgements.
 Timing percentiles alone must not hide missing captions or failed segments.
+
+`node tests/observability-browser.cjs` verifies hidden-player, hidden-ancestor,
+transparent-ancestor and offscreen-box recovery in a controlled real browser.
+It needs Chrome/Playwright, but no running backend, GPU models or audio downloads.
 
 P50/P95 use nearest rank and merge updates by session/sample/segment, so emitted
 and rendered events do not count the same segment twice. Counts accompany every

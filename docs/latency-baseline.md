@@ -100,6 +100,10 @@ English WER, terminology/meaning preservation and natural gameplay remain
 unmeasured. Expand and independently review the corpus before using it as an
 accuracy or release gate.
 
+The merge review added CSS/layout visibility and failed-translation regressions.
+The recorded run had visible captions and no failed translations, so those fixes
+do not change its archived events or numbers.
+
 Validation for this PR also includes backend tests with warnings treated as errors,
 extension tests, launcher isolation tests, real Chrome capture/fullscreen/stop/
 restart/navigation checks, and the separate browser-only Vimeo integration checks.

@@ -225,7 +225,7 @@ async def run(args):
                 'measurement_complete': all(record.get('measurement_complete', True) for record in records),
                 'definitions': {'percentiles': 'nearest rank; each segment counts once per metric',
                                 'origin': 'estimated onset of first energy-positive PCM frame at server',
-                                'readable': 'foreground animation frame, nonempty text, opacity >= 0.99',
+                                'readable': 'foreground animation frame, CSS-visible caption box intersects frame viewport, cumulative opacity >= 0.99',
                                 'final': 'same visible caption as first-readable in final-only pipeline',
                                 'missing': 'null means unobserved; WebSocket replay has no display measurements'},
                 'summary': summarize(records),

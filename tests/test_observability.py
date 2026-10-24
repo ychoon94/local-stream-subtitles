@@ -220,6 +220,40 @@ def test_authenticated_opt_in_reports_stages_clock_render_and_drops():
             assert complete['events'][0]['outcome'] == 'rendered'
 
 
+def test_failed_translation_is_not_measured_as_a_successful_zero_duration_bypass():
+    engine = SubtitleEngine(SETTINGS)
+    engine.model = object()
+    engine.transcribe = lambda *args: Transcription('こんにちは', 'ja', .99)
+
+    async def check_translation():
+        pass
+
+    async def fail_translation(*args):
+        await asyncio.sleep(.001)
+        raise RuntimeError('Translation test failure')
+
+    engine.check_translation = check_translation
+    engine.translate = fail_translation
+    with TestClient(create_app(engine, SETTINGS)) as client:
+        with client.websocket_connect('/listen', headers={'Origin': ORIGIN}) as socket:
+            socket.send_json({'token': SETTINGS.token, 'observe': True})
+            assert socket.receive_json()['type'] == 'ready'
+            socket.send_bytes(pcm(.5, .1))
+            socket.send_bytes(pcm(.5))
+            assert socket.receive_json()['state'] == 'processing'
+            failure = socket.receive_json()
+            assert failure['type'] == 'metrics'
+            assert failure['event']['outcome'] == 'asr_failed'
+            assert failure['counters']['emitted'] == 0
+            assert 'asr_finished_ms' in failure['event']['timestamps']
+            assert 'translation_started_ms' in failure['event']['timestamps']
+            assert 'translation_finished_ms' not in failure['event']['timestamps']
+            assert failure['event']['timings']['translation_ms'] is None
+            assert socket.receive_json() == {
+                'type': 'error', 'message': 'Translation test failure', 'fatal': True,
+            }
+
+
 def test_observability_requires_both_server_setting_and_start_opt_in():
     settings = replace(SETTINGS, latency_observability=False)
     app = create_app(ObservedEngine(), settings)

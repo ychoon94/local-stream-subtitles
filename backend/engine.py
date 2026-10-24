@@ -153,13 +153,16 @@ class SubtitleEngine:
                     trace['outcome'] = 'empty_asr'
                     trace['result_ready_ms'] = round(clock_ms(), 3)
                 return None
-            if trace is not None:
-                trace['translation_started_ms'] = round(asr_finished_at, 3)
-                trace['translation_finished_ms'] = round(asr_finished_at, 3)
             if mode == 'direct':
+                if trace is not None:
+                    trace['translation_started_ms'] = round(asr_finished_at, 3)
+                    trace['translation_finished_ms'] = round(asr_finished_at, 3)
                 translated, original = transcription.text, ''
             else:
                 if _should_passthrough_as_english(transcription):
+                    if trace is not None:
+                        trace['translation_started_ms'] = round(asr_finished_at, 3)
+                        trace['translation_finished_ms'] = round(asr_finished_at, 3)
                     translated, original = transcription.text, ''
                 else:
                     if trace is not None:

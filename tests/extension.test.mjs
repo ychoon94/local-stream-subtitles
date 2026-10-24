@@ -702,11 +702,16 @@ test('content subtitle messages render without recursion and survive overlay rea
       this.attributes = new Map();
       this.style = {
         position: '',
+        display: '',
+        visibility: '',
+        opacity: '',
+        contentVisibility: '',
         cssText: '',
         setProperty(name, value) { this[name] = value; }
       };
       this.hidden = false;
       this.textContent = '';
+      this.rect = { left: 10, top: 10, width: 100, height: 20 };
       this._className = '';
       this.classList = {
         add: name => this._setClass(name, true),
@@ -737,7 +742,17 @@ test('content subtitle messages render without recursion and survive overlay rea
     }
     attachShadow() {
       this.shadowRoot = new FakeElement('shadow-root');
+      this.shadowRoot.host = this;
       return this.shadowRoot;
+    }
+    getRootNode() {
+      let node = this;
+      while (node.parentElement) node = node.parentElement;
+      return node;
+    }
+    getBoundingClientRect() {
+      const { left, top, width, height } = this.rect;
+      return { left, top, width, height, right: left + width, bottom: top + height };
     }
     querySelector(selector) {
       if (!selector.startsWith('.')) return null;
@@ -760,11 +775,14 @@ test('content subtitle messages render without recursion and survive overlay rea
     }
   }
 
+  const ancestor = new FakeElement('div');
+  ancestor.isDocumentRoot = true;
   const player = new FakeElement('div');
   player.id = 'movie_player';
-  player.isDocumentRoot = true;
+  ancestor.appendChild(player);
   const overlayHosts = [];
   const document = {
+    visibilityState: 'visible',
     addEventListener() {},
     querySelector(selector) { return selector === '#movie_player' ? player : null; },
     createElement(tagName) {
@@ -790,8 +808,14 @@ test('content subtitle messages render without recursion and survive overlay rea
     document,
     location: { href: 'https://www.youtube.com/watch?v=abc' },
     URL,
-    window: { addEventListener() {} },
-    getComputedStyle: () => ({ position: 'static', opacity: String(opacity) }),
+    window: { addEventListener() {}, innerWidth: 1200, innerHeight: 800 },
+    getComputedStyle: element => ({
+      position: element.style.position || 'static',
+      display: element.hidden ? 'none' : (element.style.display || 'block'),
+      visibility: element.style.visibility || 'visible',
+      opacity: String(element.classList.contains('stack') ? opacity : (element.style.opacity || 1)),
+      contentVisibility: element.style.contentVisibility || 'visible'
+    }),
     performance: { timeOrigin: 1000000, now: () => 42 },
     requestAnimationFrame(callback) { animationFrames.push(callback); },
     setInterval(callback) { intervals.push(callback); return intervals.length; },
@@ -854,6 +878,31 @@ test('content subtitle messages render without recursion and survive overlay rea
     'A caption is not reported while its foreground opacity is below the readability threshold.');
 
   opacity = 1;
+  const translated = firstHost.shadowRoot.querySelector('.translated');
+  player.style.display = 'none';
+  runNextFrame();
+  assert.equal(runtimeMessages.filter(message => message.type === 'SUBTITLE_RENDERED').length, 0,
+    'A hidden player cannot produce a render acknowledgement.');
+
+  player.style.display = '';
+  ancestor.style.visibility = 'hidden';
+  runNextFrame();
+  assert.equal(runtimeMessages.filter(message => message.type === 'SUBTITLE_RENDERED').length, 0,
+    'A hidden CSS ancestor cannot produce a render acknowledgement.');
+
+  ancestor.style.visibility = '';
+  ancestor.style.opacity = '0';
+  runNextFrame();
+  assert.equal(runtimeMessages.filter(message => message.type === 'SUBTITLE_RENDERED').length, 0,
+    'An ancestor opacity of zero cannot produce a render acknowledgement.');
+
+  ancestor.style.opacity = '';
+  translated.rect = { left: -200, top: 10, width: 100, height: 20 };
+  runNextFrame();
+  assert.equal(runtimeMessages.filter(message => message.type === 'SUBTITLE_RENDERED').length, 0,
+    'A translated caption box fully outside the viewport cannot produce a render acknowledgement.');
+
+  translated.rect = { left: 10, top: 10, width: 100, height: 20 };
   drainFrames();
   const acknowledgements = runtimeMessages.filter(message => message.type === 'SUBTITLE_RENDERED');
   assert.equal(acknowledgements.length, 1);

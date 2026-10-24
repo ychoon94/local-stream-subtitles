@@ -129,6 +129,38 @@
     });
   }
 
+  function composedParent(element) {
+    if (element.parentElement?.host) return element.parentElement.host;
+    return element.parentElement || element.getRootNode?.().host || null;
+  }
+
+  function hasVisibleTextBox(element) {
+    let opacity = 1;
+    const visited = new Set();
+    for (let node = element; node; node = composedParent(node)) {
+      if (visited.has(node)) return false;
+      visited.add(node);
+      const style = getComputedStyle(node);
+      if (style.display === 'none' || style.visibility === 'hidden' || style.visibility === 'collapse' ||
+          style.contentVisibility === 'hidden') return false;
+      const nodeOpacity = Number(style.opacity);
+      if (!Number.isFinite(nodeOpacity)) return false;
+      opacity *= nodeOpacity;
+      if (opacity < 0.99) return false;
+    }
+
+    const rect = element.getBoundingClientRect?.();
+    if (!rect || rect.width <= 0 || rect.height <= 0) return false;
+    const viewportWidth = document.documentElement?.clientWidth || window.innerWidth;
+    const viewportHeight = document.documentElement?.clientHeight || window.innerHeight;
+    return rect.right > 0 && rect.bottom > 0 && rect.left < viewportWidth && rect.top < viewportHeight;
+  }
+
+  function retryReadableAcknowledgement(caption) {
+    caption.readabilityAttempts = (caption.readabilityAttempts || 0) + 1;
+    if (caption.readabilityAttempts < 180) scheduleReadableAcknowledgement(caption);
+  }
+
   function scheduleReadableAcknowledgement(caption) {
     const segmentId = caption.telemetry?.segment_id;
     if (!Number.isSafeInteger(segmentId) || segmentId < 1 || !currentSessionId ||
@@ -140,11 +172,9 @@
       if (document.visibilityState === 'hidden') return;
       const stack = shadowRoot.querySelector('.stack');
       const translated = shadowRoot.querySelector('.translated');
-      if (!overlayHost?.isConnected || !stack?.classList.contains('visible') || !translated?.textContent.trim()) return;
-      const opacity = Number(getComputedStyle(stack).opacity);
-      if (!Number.isFinite(opacity) || opacity < 0.99) {
-        caption.readabilityAttempts = (caption.readabilityAttempts || 0) + 1;
-        if (caption.readabilityAttempts < 180) scheduleReadableAcknowledgement(caption);
+      if (!overlayHost?.isConnected || !stack?.classList.contains('visible') || !translated?.textContent.trim() ||
+          !hasVisibleTextBox(translated)) {
+        retryReadableAcknowledgement(caption);
         return;
       }
       const acknowledgementKey = `${currentSessionId}:${segmentId}`;
