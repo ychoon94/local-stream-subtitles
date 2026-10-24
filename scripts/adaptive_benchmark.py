@@ -218,6 +218,8 @@ def _quality_sidecar(engine, report, variant, cell_index):
     mapping_available = (
         engine.quality_session_ordinal == len(records)
         and len(engine.quality_buffers) == len(records)
+        and all(ordinal is not None and 1 <= ordinal <= len(records)
+                for ordinal in captured_by_session)
     )
     session_rows = []
     for ordinal, record in enumerate(records, start=1):
@@ -284,6 +286,8 @@ def hold_reason(report, gpu_report, variant, quality):
         return 'Speech recognition failed for a segment.'
     if not report.get('measurement_complete', False):
         return 'The latency replay did not complete its measurements.'
+    if quality.get('sample_mapping') != 'verified-session-ordinal':
+        return 'Quality evidence could not be mapped to replay sessions.'
 
     if variant['segmentation_mode'] == 'adaptive_vad':
         sessions = quality.get('sessions', [])
@@ -307,8 +311,9 @@ def cell_configuration(variant, settings, manifest):
     frame_samples = manifest.get('frame_samples', 2048)
     window = ADAPTIVE_WINDOW_SAMPLES if mode != 'legacy' else frame_samples
     adaptive = mode != 'legacy'
-    maximum = variant['speech_max_seconds'] if adaptive else settings.speech_max_seconds
-    silence = variant['speech_silence_seconds'] if adaptive else settings.speech_silence_seconds
+    # Legacy ignores all adaptive tuning fields; describe its actual control.
+    maximum = variant['speech_max_seconds'] if adaptive else 5.0
+    silence = variant['speech_silence_seconds'] if adaptive else 0.45
     effective = None
     if adaptive:
         max_samples = int(maximum * SAMPLE_RATE) // ADAPTIVE_WINDOW_SAMPLES * ADAPTIVE_WINDOW_SAMPLES
@@ -323,10 +328,10 @@ def cell_configuration(variant, settings, manifest):
         }
     return {
         'segmentation_mode': mode,
-        'speech_min_seconds': settings.speech_min_seconds,
+        'speech_min_seconds': settings.speech_min_seconds if adaptive else 0.25,
         'speech_max_seconds': maximum,
         'speech_silence_seconds': silence,
-        'speech_overlap_seconds': settings.speech_overlap_seconds,
+        'speech_overlap_seconds': settings.speech_overlap_seconds if adaptive else 0.0,
         'effective_quantization': {
             'window_samples': window,
             'window_ms': round(window / SAMPLE_RATE * 1000, 3),

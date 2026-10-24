@@ -32,7 +32,9 @@ not a quality-approved recommendation:
 The maximum must exceed minimum speech + requested overlap + 300 ms. Invalid or
 nonfinite values fail before capture. Adaptive tuning fields have no effect in
 `legacy` mode. To roll back, set `segmentation_mode` to `legacy` (or remove it)
-and restart; no model, extension preference or pairing migration is needed.
+and restart; no model, extension preference or pairing migration is needed. The
+benchmark reports legacy's actual fixed limits as 0.25 s minimum, 5 s maximum,
+450 ms silence and no overlap, even if the adaptive tuning fields differ.
 
 `adaptive_vad` uses the CPU Silero model already packaged with faster-whisper.
 The [packaged callable](https://github.com/SYSTRAN/faster-whisper/blob/master/faster_whisper/vad.py)
@@ -103,7 +105,12 @@ accepted, including sessions with no detected speech.
 
 Atomic checkpoints stop at `HOLD` for dropped or
 stale audio, failed processing, incomplete rendering, VAD fallback, unavailable
-GPU telemetry, or sampled whole-board memory reaching 8,192 MiB. An exception
+GPU telemetry, unverified quality-to-session mapping, or sampled whole-board
+memory reaching 8,192 MiB. Quality mapping requires matching processed-segment
+counts and valid session ordinals for every captured segment; missing or
+out-of-range ordinals leave the mapping unavailable. The manifest loader also
+rejects duplicate, empty, or non-string sample IDs before replay, so ID-keyed
+reports keep each recording distinct. An exception
 produces a failed checkpoint and cleans up the owned server. Empty ASR attempts
 are retained in the report; they can be normal for music and do not automatically
 invalidate an experiment. These stop rules are experimental safeguards, not a

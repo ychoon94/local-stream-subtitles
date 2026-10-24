@@ -245,7 +245,8 @@ def test_hold_rules_stop_on_drops_and_vad_fallback_but_allow_empty_asr():
 
     assert hold_reason(complete_report, gpu_report,
                        {'segmentation_mode': 'adaptive_rms'},
-                       {'effective_endpoint_modes': ['adaptive_rms']}) is None
+                       {'sample_mapping': 'verified-session-ordinal',
+                        'effective_endpoint_modes': ['adaptive_rms']}) is None
     complete_report['summary']['counters']['dropped_queue'] = 1
     assert hold_reason(complete_report, gpu_report,
                        {'segmentation_mode': 'adaptive_rms'},
@@ -254,7 +255,8 @@ def test_hold_rules_stop_on_drops_and_vad_fallback_but_allow_empty_asr():
     complete_report['summary']['counters']['dropped_queue'] = 0
     assert hold_reason(complete_report, gpu_report,
                        {'segmentation_mode': 'adaptive_vad'},
-                       {'effective_endpoint_modes': ['adaptive_rms']}) == (
+                       {'sample_mapping': 'verified-session-ordinal',
+                        'effective_endpoint_modes': ['adaptive_rms']}) == (
                            'adaptive_vad was not consistently observed (effective modes: adaptive_rms).')
 
 
@@ -269,6 +271,69 @@ def test_hold_rules_include_unavailable_gpu_and_memory_ceiling():
         {'peak_memory_used_mib': 8192},
     ]}, {'segmentation_mode': 'adaptive_rms'}, quality) == (
         'Peak total GPU memory use reached 8192 MiB.')
+
+
+@pytest.mark.parametrize('mode', ['legacy', 'adaptive_rms', 'adaptive_vad'])
+def test_unmapped_quality_evidence_holds_every_segmentation_mode(mode):
+    report = {'gpu': {'available': True}, 'measurement_complete': True,
+              'summary': {'counters': {}}}
+    quality = {'sample_mapping': 'unavailable', 'effective_endpoint_modes': [mode],
+               'sessions': [{'effective_endpoint_modes': [mode], 'vad_fallback': False}]}
+    assert hold_reason(report, {'available': True, 'boards': []},
+                       {'segmentation_mode': mode}, quality) == (
+                           'Quality evidence could not be mapped to replay sessions.')
+
+
+@pytest.mark.parametrize('orphan_ordinal', [None, 0, 2])
+def test_unattributed_asr_output_cannot_receive_verified_quality_mapping(orphan_ordinal):
+    engine = SimpleNamespace(
+        quality_session_ordinal=1,
+        quality_buffers=[{'session_ordinal': 1, 'requested_mode': 'adaptive_rms',
+                          'buffer': SimpleNamespace(mode='adaptive_rms')}],
+        quality_segments=[{'session_ordinal': orphan_ordinal, 'asr_text': 'invented text'}],
+    )
+    report = {'records': [{'sample_id': 'silence', 'iteration': 1, 'counters': {}}]}
+    quality = _quality_sidecar(engine, report, {'segmentation_mode': 'adaptive_rms'}, 1)
+    assert quality['sample_mapping'] == 'unavailable'
+
+
+def test_legacy_configuration_reports_fixed_runtime_limits_when_adaptive_settings_differ():
+    settings = Settings(token='local-only', speech_min_seconds=.5, speech_max_seconds=3,
+                        speech_silence_seconds=.35, speech_overlap_seconds=.32)
+    config = cell_configuration(build_matrix()[0], settings, {'frame_samples': 2048})
+    assert config['speech_min_seconds'] == .25
+    assert config['speech_max_seconds'] == 5
+    assert config['speech_silence_seconds'] == .45
+    assert config['speech_overlap_seconds'] == 0
+
+
+def test_gpu_telemetry_failure_after_success_invalidates_availability(monkeypatch):
+    class Probe:
+        def __init__(self, returncode):
+            self.returncode = returncode
+
+        async def communicate(self):
+            return b'0, Test GPU, 8192, 4096, 25\n', b''
+
+    probes = iter([Probe(0), Probe(1)])
+
+    async def create_probe(*_args, **_kwargs):
+        return next(probes)
+
+    async def next_probe(_delay):
+        pass
+
+    monkeypatch.setattr(latency_benchmark.asyncio, 'create_subprocess_exec', create_probe)
+    monkeypatch.setattr(latency_benchmark.asyncio, 'sleep', next_probe)
+    gpu = latency_benchmark.GPUUsage()
+    asyncio.run(gpu.run())
+    assert gpu.report['samples'] == 1
+    assert gpu.report['boards'][0]['peak_memory_used_mib'] == 4096
+    assert gpu.report['available'] is False
+    report = {'gpu': gpu.report, 'measurement_complete': True, 'summary': {'counters': {}}}
+    assert hold_reason(report, gpu.report, {'segmentation_mode': 'adaptive_rms'},
+                       {'sample_mapping': 'verified-session-ordinal'}) == (
+                           'GPU usage could not be measured.')
 
 
 def test_wait_event_returns_only_next_cell_or_terminal_status():
@@ -414,7 +479,12 @@ def test_matrix_reuses_one_engine_and_changes_only_selected_segmentation_setting
         return engine
 
     async def replay(_args):
-        settings = engines[0].settings
+        engine = engines[0]
+        settings = engine.settings
+        engine.quality_session_ordinal += 1
+        adaptive_benchmark.backend_app_module.create_speech_buffer(settings, observe=True)
+        engine.quality_segments.append({'session_ordinal': 1, 'segment_id': 1,
+                                        'asr_text': '', 'outcome': 'empty_asr'})
         replay_settings.append((
             settings.segmentation_mode,
             settings.speech_max_seconds,
@@ -429,6 +499,7 @@ def test_matrix_reuses_one_engine_and_changes_only_selected_segmentation_setting
             'summary': {'counters': {'empty_asr': 1}},
             'per_sample': {'sample': {}},
             'records': [{'sample_id': 'sample', 'iteration': 1, 'events': [],
+                         'counters': {'empty_asr': 1},
                          'playback_to_first_readable_ms': 125}],
         }
 
