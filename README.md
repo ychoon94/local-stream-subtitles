@@ -161,6 +161,11 @@ corpus, live PCM replay and actual Chrome rendering measurements, see
 [latency observability](docs/latency-observability.md). Measurement is disabled by
 default and retains the existing buffering and inference behavior.
 
+For opt-in adaptive RMS or speech-aware endpointing, bounded overlap, rollback,
+and the duration/pause experiment runner, see
+[adaptive segmentation](docs/adaptive-segmentation.md). Legacy segmentation
+remains the default until latency and speech-quality evidence justify a change.
+
 The optional `npm run test:browser` check needs the service running and a public
 `.runtime/streaming-sample.wav` fixture. It uses a separate browser profile and
 auto-detects installed Chrome on Windows; `CHROME_PATH` overrides the executable.

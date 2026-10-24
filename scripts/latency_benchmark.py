@@ -11,6 +11,7 @@ import wave
 
 from backend.audio import SAMPLE_RATE
 from backend.config import load_settings
+from scripts.process_cleanup import terminate_owned_subprocess_tree
 
 ROOT = Path(__file__).resolve().parents[1]
 ORIGIN = 'chrome-extension://' + 'a' * 32
@@ -206,8 +207,7 @@ async def run(args):
             try:
                 _, stderr = await process.communicate()
             except BaseException:
-                process.kill()
-                await process.wait()
+                await terminate_owned_subprocess_tree(process)
                 raise
             if process.returncode:
                 raise RuntimeError(stderr.decode(errors='replace')[-2000:] or 'Browser replay failed.')

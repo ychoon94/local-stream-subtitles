@@ -49,6 +49,16 @@ async function main() {
     if (executable) ({ id: extensionId } = await browserCDP.send('Extensions.loadUnpacked', { path: path.join(root, 'extension') }));
     const worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker');
     extensionId ||= new URL(worker.url()).host;
+    // A shared playback-origin comparison avoids making a later VAD detection
+    // look faster solely by moving the estimated speech onset forward.
+    await worker.evaluate(() => {
+      globalThis.benchmarkReadable = [];
+      chrome.runtime.onMessage.addListener(message => {
+        if (message?.type === 'SUBTITLE_RENDERED' && Number.isFinite(message.first_readable_browser_ms)) {
+          globalThis.benchmarkReadable.push({ segmentId: message.segment_id, at: message.first_readable_browser_ms });
+        }
+      });
+    });
     const diagnostics = type => worker.evaluate(type => chrome.runtime.sendMessage({ target: 'offscreen', type }), type);
     let currentSample;
     await context.route('https://www.youtube.com/**', async route => {
@@ -58,13 +68,14 @@ async function main() {
         await route.fulfill({ contentType: 'text/html', body: `<!doctype html><meta charset="utf-8"><title>Frozen local latency replay</title>
           <style>body{margin:0;background:#151515}#movie_player{position:relative;height:700px}</style>
           <div id="movie_player"><button id="play">Play recorded sample</button><audio id="audio" preload="auto" src="/sample.wav"></audio></div>
-          <script>document.querySelector('#play').onclick=()=>document.querySelector('#audio').play();</script>` });
+          <script>document.querySelector('#audio').addEventListener('playing',()=>{window.playbackStartedMs??=performance.timeOrigin+performance.now()});document.querySelector('#play').onclick=()=>document.querySelector('#audio').play();</script>` });
       }
     });
     const video = context.pages()[0] || await context.newPage();
     for (let iteration = 1; iteration <= repeats; iteration += 1) {
       for (const sample of samples) {
         currentSample = sample;
+        await worker.evaluate(() => { globalThis.benchmarkReadable = []; });
         await video.goto(`https://www.youtube.com/watch?v=latency-${sample.id}-${iteration}`);
         await video.bringToFront();
         const { targetInfos } = await browserCDP.send('Target.getTargets', { filter: [{ type: 'tab', exclude: false }] });
@@ -110,6 +121,11 @@ async function main() {
           profile: health.profile, device: health.device, events: metrics.events, counters: metrics.counters,
           clock_uncertainty_ms: metrics.clockUncertaintyMs,
           rendered_segments: new Set(metrics.events.filter(e => e.outcome === 'rendered').map(e => e.segment_id)).size };
+        const renderedIds = new Set(metrics.events.filter(e => e.outcome === 'rendered').map(e => e.segment_id));
+        const readable = (await worker.evaluate(() => globalThis.benchmarkReadable)).filter(e => renderedIds.has(e.segmentId));
+        const playbackStarted = await video.evaluate(() => window.playbackStartedMs);
+        record.playback_to_first_readable_ms = readable.length && Number.isFinite(playbackStarted)
+          ? Math.max(0, Math.min(...readable.map(e => e.at)) - playbackStarted) : null;
         record.unrendered_segments = Math.max(0, (record.counters.emitted || 0) - record.rendered_segments);
         record.measurement_complete = record.unrendered_segments === 0;
         records.push(record);
