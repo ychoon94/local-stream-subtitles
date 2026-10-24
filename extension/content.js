@@ -5,11 +5,13 @@
   const ALLOWED_FONT_SIZES = { small: 22, medium: 28, large: 36 };
 
   let sessionActive = false;
+  let currentSessionId = null;
   let overlayHost = null;
   let shadowRoot = null;
   let positionedPlayer = null;
   let previousInlinePosition = '';
   let currentCaption = null;
+  const acknowledgedSegments = new Set();
   let currentPreferences = { showJapanese: true, fontSize: 'medium' };
   let clearTimer = null;
   let lastUrl = location.href;
@@ -120,7 +122,76 @@
     translated.textContent = typeof caption.translated === 'string' ? caption.translated : '';
     original.hidden = !currentPreferences.showJapanese || !original.textContent.trim();
     stack.classList.remove('visible');
-    requestAnimationFrame(() => shadowRoot?.querySelector('.stack')?.classList.add('visible'));
+    requestAnimationFrame(() => {
+      if (currentCaption !== caption || !sessionActive || !shadowRoot) return;
+      shadowRoot.querySelector('.stack')?.classList.add('visible');
+      scheduleReadableAcknowledgement(caption);
+    });
+  }
+
+  function composedParent(element) {
+    if (element.parentElement?.host) return element.parentElement.host;
+    return element.parentElement || element.getRootNode?.().host || null;
+  }
+
+  function hasVisibleTextBox(element) {
+    let opacity = 1;
+    const visited = new Set();
+    for (let node = element; node; node = composedParent(node)) {
+      if (visited.has(node)) return false;
+      visited.add(node);
+      const style = getComputedStyle(node);
+      if (style.display === 'none' || style.visibility === 'hidden' || style.visibility === 'collapse' ||
+          style.contentVisibility === 'hidden') return false;
+      const nodeOpacity = Number(style.opacity);
+      if (!Number.isFinite(nodeOpacity)) return false;
+      opacity *= nodeOpacity;
+      if (opacity < 0.99) return false;
+    }
+
+    const rect = element.getBoundingClientRect?.();
+    if (!rect || rect.width <= 0 || rect.height <= 0) return false;
+    const viewportWidth = document.documentElement?.clientWidth || window.innerWidth;
+    const viewportHeight = document.documentElement?.clientHeight || window.innerHeight;
+    return rect.right > 0 && rect.bottom > 0 && rect.left < viewportWidth && rect.top < viewportHeight;
+  }
+
+  function retryReadableAcknowledgement(caption) {
+    caption.readabilityAttempts = (caption.readabilityAttempts || 0) + 1;
+    if (caption.readabilityAttempts < 180) scheduleReadableAcknowledgement(caption);
+  }
+
+  function scheduleReadableAcknowledgement(caption) {
+    const segmentId = caption.telemetry?.segment_id;
+    if (!Number.isSafeInteger(segmentId) || segmentId < 1 || !currentSessionId ||
+        currentCaption !== caption || acknowledgedSegments.has(`${currentSessionId}:${segmentId}`) || caption.readabilityCheckScheduled) return;
+    caption.readabilityCheckScheduled = true;
+    requestAnimationFrame(() => {
+      caption.readabilityCheckScheduled = false;
+      if (currentCaption !== caption || !sessionActive || !shadowRoot) return;
+      if (document.visibilityState === 'hidden') return;
+      const stack = shadowRoot.querySelector('.stack');
+      const translated = shadowRoot.querySelector('.translated');
+      if (!overlayHost?.isConnected || !stack?.classList.contains('visible') || !translated?.textContent.trim() ||
+          !hasVisibleTextBox(translated)) {
+        retryReadableAcknowledgement(caption);
+        return;
+      }
+      const acknowledgementKey = `${currentSessionId}:${segmentId}`;
+      acknowledgedSegments.add(acknowledgementKey);
+      while (acknowledgedSegments.size > 128) {
+        acknowledgedSegments.delete(acknowledgedSegments.values().next().value);
+      }
+      const readableAt = performance.timeOrigin + performance.now();
+      chrome.runtime.sendMessage({
+        target: 'background',
+        type: 'SUBTITLE_RENDERED',
+        sessionId: currentSessionId,
+        segment_id: segmentId,
+        first_readable_browser_ms: readableAt,
+        final_browser_ms: readableAt
+      }).catch(() => {});
+    });
   }
 
   function clearCaption() {
@@ -156,6 +227,7 @@
 
   function stopOverlay() {
     sessionActive = false;
+    currentSessionId = null;
     removeOverlay();
   }
 
@@ -163,18 +235,23 @@
     if (!message || message.target !== MESSAGE_TARGET) return;
     if (message.type === 'CAPTURE_STARTED') {
       sessionActive = true;
+      currentSessionId = typeof message.sessionId === 'string' ? message.sessionId : null;
       currentPreferences = safePreferences(message.preferences);
       ensureOverlay();
+    } else if (message.type === 'SUBTITLE' && message.subtitle && typeof message.subtitle === 'object') {
+      if (!sessionActive || !currentSessionId || message.sessionId !== currentSessionId) return;
+      const telemetry = message.subtitle.telemetry;
+      const caption = {
+        original: typeof message.subtitle.original === 'string' ? message.subtitle.original.slice(0, 1200) : '',
+        translated: typeof message.subtitle.translated === 'string' ? message.subtitle.translated.slice(0, 1200) : '',
+        telemetry: telemetry && Number.isSafeInteger(telemetry.segment_id) ? { segment_id: telemetry.segment_id } : null,
+        readabilityCheckScheduled: false,
+        readabilityAttempts: 0
+      };
+      if (caption.translated.trim()) showCaption(caption);
     } else if (message.type === 'SET_PREFERENCES') {
       currentPreferences = safePreferences(message.preferences);
       applyPreferences();
-    } else if (message.type === 'SUBTITLE' && message.subtitle && typeof message.subtitle === 'object') {
-      if (!sessionActive) return;
-      const caption = {
-        original: typeof message.subtitle.original === 'string' ? message.subtitle.original.slice(0, 1200) : '',
-        translated: typeof message.subtitle.translated === 'string' ? message.subtitle.translated.slice(0, 1200) : ''
-      };
-      if (caption.translated.trim()) showCaption(caption);
     } else if (message.type === 'CAPTURE_STOPPED') {
       stopOverlay();
     }
@@ -191,6 +268,9 @@
 
   chrome.runtime.onMessage.addListener(handleMessage);
   document.addEventListener('fullscreenchange', () => ensureOverlay());
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'hidden' && currentCaption) scheduleReadableAcknowledgement(currentCaption);
+  });
   window.addEventListener('popstate', checkNavigation, { passive: true });
   window.addEventListener('hashchange', checkNavigation, { passive: true });
   window.addEventListener('pagehide', () => {

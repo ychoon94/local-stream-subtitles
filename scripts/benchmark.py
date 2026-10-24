@@ -4,6 +4,7 @@ import asyncio
 from collections import deque
 import json
 import time
+from pathlib import Path
 
 from faster_whisper.audio import decode_audio
 
@@ -32,5 +33,31 @@ async def main(path):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('audio')
-    asyncio.run(main(parser.parse_args().audio))
+    parser.add_argument('audio', nargs='?')
+    modes = parser.add_mutually_exclusive_group()
+    modes.add_argument('--live', action='store_true', help='Replay PCM frames through the live service')
+    modes.add_argument('--browser', action='store_true', help='Replay through isolated Chrome capture and rendering')
+    parser.add_argument('--manifest', type=Path)
+    parser.add_argument('--url', default='ws://127.0.0.1:8765/listen')
+    parser.add_argument('--settings', type=Path, help='Local pairing settings; never printed')
+    parser.add_argument('--repeats', type=int, default=1)
+    parser.add_argument('--timeout', type=float, default=60)
+    parser.add_argument('--output', type=Path)
+    args = parser.parse_args()
+    if args.live or args.browser:
+        from scripts.latency_benchmark import run
+        try:
+            report = asyncio.run(run(args))
+        except (ValueError, RuntimeError, OSError, asyncio.TimeoutError) as error:
+            raise SystemExit(str(error)) from None
+        output = json.dumps(report, ensure_ascii=False, indent=2) + '\n'
+        if args.output:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            args.output.write_text(output, encoding='utf-8')
+            print(args.output)
+        else:
+            print(output)
+    elif args.audio:
+        asyncio.run(main(args.audio))
+    else:
+        parser.error('Supply an audio file, --live --manifest, or --browser --manifest.')

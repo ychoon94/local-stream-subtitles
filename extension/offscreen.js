@@ -4,6 +4,10 @@ const FRAME_SAMPLES = 2048;
 const MAX_BUFFERED_BYTES = 64 * 1024;
 const RESUME_BUFFERED_BYTES = 16 * 1024;
 const READY_TIMEOUT_MS = 15000;
+const MAX_RENDER_TIMINGS = 128;
+const MAX_METRIC_EVENTS = 512;
+const CLOCK_SAMPLE_COUNT = 3;
+const MAX_SERVER_CLOCK_RESOLUTION_MS = 100;
 const BACKGROUND_URL = chrome.runtime.getURL('background.js');
 
 let activeSession = null;
@@ -22,6 +26,131 @@ function postBackground(message) {
 function cleanMessage(value, fallback = 'Local subtitle service error.') {
   if (typeof value !== 'string') return fallback;
   return value.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 240) || fallback;
+}
+
+function browserNow() {
+  return performance.timeOrigin + performance.now();
+}
+
+function calculateClockCalibration(clientSentMs, serverReceivedMs, serverSentMs, clientReceivedMs, clockResolutionMs = 0) {
+  const values = [clientSentMs, serverReceivedMs, serverSentMs, clientReceivedMs];
+  if (!values.every(Number.isFinite) || !Number.isFinite(clockResolutionMs) ||
+      clockResolutionMs < 0 || clockResolutionMs > MAX_SERVER_CLOCK_RESOLUTION_MS) return null;
+  const roundTripMs = clientReceivedMs - clientSentMs - (serverSentMs - serverReceivedMs);
+  if (roundTripMs < 0 || roundTripMs > 2000) return null;
+  return {
+    offsetMs: ((serverReceivedMs - clientSentMs) + (serverSentMs - clientReceivedMs)) / 2,
+    uncertaintyMs: roundTripMs / 2 + clockResolutionMs
+  };
+}
+
+function rememberRenderTiming(record, telemetry, browserReceivedMs) {
+  if (!record.observability || !record.clockCalibration || !telemetry ||
+      !Number.isSafeInteger(telemetry.segment_id) || telemetry.segment_id < 1 ||
+      !Number.isFinite(telemetry.speech_started_ms) || !Number.isFinite(telemetry.result_ready_ms) ||
+      !Number.isFinite(telemetry.websocket_sent_ms)) return;
+  const segmentId = telemetry.segment_id;
+  record.renderTimings.delete(segmentId);
+  record.renderTimings.set(segmentId, {
+    speechStartedMs: telemetry.speech_started_ms,
+    resultReadyMs: telemetry.result_ready_ms,
+    websocketSentMs: telemetry.websocket_sent_ms,
+    browserReceivedServerMs: browserReceivedMs + record.clockCalibration.offsetMs,
+    clockOffsetMs: record.clockCalibration.offsetMs,
+    clockUncertaintyMs: record.clockCalibration.uncertaintyMs
+  });
+  while (record.renderTimings.size > MAX_RENDER_TIMINGS) {
+    record.renderTimings.delete(record.renderTimings.keys().next().value);
+  }
+}
+
+async function calibrateClock(record) {
+  if (activeSession !== record || !record.observability || !record.socket) return;
+  let best = null;
+  for (let sample = 0; sample < CLOCK_SAMPLE_COUNT; sample += 1) {
+    if (activeSession !== record || record.socket.readyState !== WebSocket.OPEN) return;
+    const clientSentMs = browserNow();
+    const response = new Promise(resolve => {
+      const timer = setTimeout(() => {
+        record.clockSyncPending.delete(clientSentMs);
+        resolve(null);
+      }, 1500);
+      record.clockSyncPending.set(clientSentMs, message => {
+        clearTimeout(timer);
+        resolve(message);
+      });
+    });
+    try {
+      record.socket.send(JSON.stringify({ type: 'clock_sync', client_sent_ms: clientSentMs }));
+    } catch {
+      record.clockSyncPending.delete(clientSentMs);
+      return;
+    }
+    const message = await response;
+    if (!message) continue;
+    const serverResolutionMs = message.clock_resolution_ms;
+    if (!Number.isFinite(serverResolutionMs) || serverResolutionMs < 0 ||
+        serverResolutionMs > MAX_SERVER_CLOCK_RESOLUTION_MS) continue;
+    const calibration = calculateClockCalibration(
+      clientSentMs,
+      message.server_received_ms,
+      message.server_sent_ms,
+      message.client_received_ms,
+      serverResolutionMs + 1
+    );
+    if (calibration && (!best || calibration.uncertaintyMs < best.uncertaintyMs)) best = calibration;
+  }
+  if (activeSession === record && best) {
+    record.clockCalibration = best;
+    record.clockUncertaintyMs = best.uncertaintyMs;
+  }
+}
+
+function reportDroppedAudio(record) {
+  if (!record.observability || !record.droppedFrames || record.socket?.readyState !== WebSocket.OPEN) return;
+  try {
+    record.socket.send(JSON.stringify({
+      type: 'audio_dropped', frames: record.droppedFrames, samples: record.droppedFrames * FRAME_SAMPLES
+    }));
+    record.droppedFrames = 0;
+  } catch {
+    // The closing socket cannot accept a final drop count.
+  }
+}
+
+function numericMetrics(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const result = {};
+  for (const [key, item] of Object.entries(value)) {
+    if (typeof item === 'number' && Number.isFinite(item)) result[key] = item;
+    else if (item && typeof item === 'object' && !Array.isArray(item)) {
+      const nested = numericMetrics(item);
+      if (nested && Object.keys(nested).length) result[key] = nested;
+    }
+  }
+  return result;
+}
+
+function recordMetrics(record, message) {
+  const counters = numericMetrics(message.counters);
+  if (counters) record.metricCounters = counters;
+  if (message.event && typeof message.event === 'object') {
+    const event = numericMetrics(message.event);
+    const outcome = ['emitted', 'empty_asr', 'dropped_queue', 'skipped_stale', 'rendered', 'asr_failed'].includes(message.event.outcome)
+      ? message.event.outcome
+      : null;
+    if (event && Number.isSafeInteger(message.event.segment_id) && message.event.segment_id > 0 && outcome) {
+      event.segment_id = message.event.segment_id;
+      event.outcome = outcome;
+      if (['live', 'source_eof'].includes(message.event.source)) event.source = message.event.source;
+      record.metricEvents.push(event);
+      if (record.metricEvents.length > MAX_METRIC_EVENTS) {
+        record.metricEvents.shift();
+        record.lostEvents += 1;
+      }
+    }
+  }
+  if (message.type === 'benchmark_complete') record.benchmarkComplete = true;
 }
 
 function makeFrame(samples) {
@@ -84,6 +213,7 @@ function addPcmSamples(record, samples) {
         record.backpressured = true;
         sendStatus(record, 'backpressure', 'Local service is behind · dropping audio to keep subtitles live');
       }
+      record.droppedFrames += 1;
     } else {
       try {
         record.socket.send(makeFrame(record.frame));
@@ -92,6 +222,7 @@ function addPcmSamples(record, samples) {
         return;
       }
       if (record.backpressured && record.socket.bufferedAmount < RESUME_BUFFERED_BYTES) {
+        reportDroppedAudio(record);
         record.backpressured = false;
         sendStatus(record, 'listening', 'Listening · subtitles will appear on the video');
       }
@@ -111,6 +242,7 @@ function handleAudioChunk(record, message) {
 }
 
 function handleServerMessage(record, data) {
+  const browserReceivedMs = browserNow();
   let message;
   try {
     message = JSON.parse(data);
@@ -120,11 +252,21 @@ function handleServerMessage(record, data) {
   }
   if (!message || typeof message !== 'object') return;
 
+  if (message.type === 'clock_sync') {
+    const complete = record.clockSyncPending.get(message.client_sent_ms);
+    if (!complete) return;
+    record.clockSyncPending.delete(message.client_sent_ms);
+    complete({ ...message, client_received_ms: browserReceivedMs });
+    return;
+  }
+
   if (message.type === 'ready') {
     if (record.ready || activeSession !== record) return;
     record.ready = true;
     if (record.readyTimer) clearTimeout(record.readyTimer);
     const profile = typeof message.profile === 'string' ? cleanMessage(message.profile, '') : '';
+    record.observability = message.observability === true;
+    if (record.observability) void calibrateClock(record);
     sendStatus(record, 'listening', profile ? `Listening · ${profile}` : 'Listening · subtitles will appear on the video', profile);
     record.resolveStart({ ok: true });
     return;
@@ -140,14 +282,26 @@ function handleServerMessage(record, data) {
     const subtitleId = typeof message.id === 'string' || Number.isFinite(message.id)
       ? String(message.id).slice(0, 80)
       : '';
+    const telemetry = message.telemetry && typeof message.telemetry === 'object' ? message.telemetry : null;
+    if (record.observability && record.clockCalibration) {
+      rememberRenderTiming(record, telemetry, browserReceivedMs);
+    }
     postBackground({
       type: 'OFFSCREEN_SUBTITLE',
       sessionId: record.sessionId,
       original: typeof message.original === 'string' ? message.original.slice(0, 1200) : '',
       translated: typeof message.translated === 'string' ? message.translated.slice(0, 1200) : '',
       latency_ms: Number.isFinite(message.latency_ms) ? message.latency_ms : null,
-      id: subtitleId
+      id: subtitleId,
+      telemetry: record.observability && telemetry && Number.isSafeInteger(telemetry.segment_id)
+        ? { segment_id: telemetry.segment_id }
+        : null
     });
+    return;
+  }
+
+  if (message.type === 'metrics' || message.type === 'metrics_snapshot' || message.type === 'benchmark_complete') {
+    recordMetrics(record, message);
     return;
   }
 
@@ -177,7 +331,7 @@ function openSocket(record, token) {
     socket.addEventListener('open', () => {
       if (activeSession !== record) return;
       try {
-        socket.send(JSON.stringify({ type: 'start', token, mode: record.mode }));
+        socket.send(JSON.stringify({ type: 'start', token, mode: record.mode, observe: true }));
         sendStatus(record, 'connecting', 'Connecting to local speech recognition…');
       } catch {
         reject(new Error('Could not start the local subtitle connection.'));
@@ -217,7 +371,17 @@ async function startCapture(message) {
     frame: new Int16Array(FRAME_SAMPLES),
     frameLength: 0,
     intentionalStop: false,
-    backpressured: false
+    backpressured: false,
+    observability: false,
+    clockCalibration: null,
+    clockUncertaintyMs: null,
+    clockSyncPending: new Map(),
+    renderTimings: new Map(),
+    metricEvents: [],
+    lostEvents: 0,
+    metricCounters: {},
+    benchmarkComplete: false,
+    droppedFrames: 0
   };
   activeSession = record;
 
@@ -302,12 +466,70 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
   if (message.type === 'STOP_CAPTURE') {
     markSessionCancelled(message.sessionId);
+    if (activeSession?.sessionId === message.sessionId) reportDroppedAudio(activeSession);
     stopCurrent(message.sessionId).then(stopped => sendResponse({ ok: true, stopped })).catch(error => sendResponse({ ok: false, error: cleanMessage(error?.message) }));
     return true;
   }
   if (message.type === 'GET_STATE') {
     getState().then(sendResponse).catch(() => sendResponse({ session: null }));
     return true;
+  }
+  if (message.type === 'GET_METRICS') {
+    const record = activeSession;
+    sendResponse({
+      observability: record?.observability === true,
+      events: record ? [...record.metricEvents] : [],
+      lostEvents: record?.lostEvents ?? 0,
+      counters: record ? { ...record.metricCounters } : {},
+      benchmarkComplete: record?.benchmarkComplete === true,
+      clockUncertaintyMs: record?.clockUncertaintyMs ?? null
+    });
+    return false;
+  }
+  if (message.type === 'END_BENCHMARK') {
+    const record = activeSession;
+    if (!record?.observability || record.socket?.readyState !== WebSocket.OPEN) {
+      sendResponse({ ok: false, ignored: true });
+      return false;
+    }
+    try {
+      reportDroppedAudio(record);
+      record.socket.send(JSON.stringify({ type: 'benchmark_end' }));
+      sendResponse({ ok: true });
+    } catch {
+      sendResponse({ ok: false, ignored: true });
+    }
+    return false;
+  }
+  if (message.type === 'REPORT_RENDER') {
+    const record = activeSession;
+    if (!record || !record.observability || message.sessionId !== record.sessionId ||
+        !Number.isSafeInteger(message.segment_id) || !Number.isFinite(message.first_readable_browser_ms) ||
+        !Number.isFinite(message.final_browser_ms)) {
+      sendResponse({ ok: false, ignored: true });
+      return false;
+    }
+    const timing = record.renderTimings.get(message.segment_id);
+    if (!timing || message.final_browser_ms < message.first_readable_browser_ms ||
+        message.first_readable_browser_ms < timing.browserReceivedServerMs - timing.clockOffsetMs - 1000) {
+      sendResponse({ ok: false, ignored: true });
+      return false;
+    }
+    record.renderTimings.delete(message.segment_id);
+    try {
+      record.socket.send(JSON.stringify({
+        type: 'rendered', segment_id: message.segment_id,
+        first_readable_server_ms: message.first_readable_browser_ms + timing.clockOffsetMs,
+        final_server_ms: message.final_browser_ms + timing.clockOffsetMs,
+        browser_received_server_ms: timing.browserReceivedServerMs,
+        clock_uncertainty_ms: timing.clockUncertaintyMs,
+        render_method: 'fully_visible_animation_frame'
+      }));
+      sendResponse({ ok: true });
+    } catch {
+      sendResponse({ ok: false, ignored: true });
+    }
+    return false;
   }
   return false;
 });

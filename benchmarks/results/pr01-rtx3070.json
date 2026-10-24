@@ -1,0 +1,1994 @@
+{
+  "schema_version": 1,
+  "mode": "browser",
+  "corpus_recipe": "latency-smoke-v1",
+  "repeats": 2,
+  "measurement_complete": true,
+  "definitions": {
+    "percentiles": "nearest rank; each segment counts once per metric",
+    "origin": "estimated onset of first energy-positive PCM frame at server",
+    "readable": "foreground animation frame, nonempty text, opacity >= 0.99",
+    "final": "same visible caption as first-readable in final-only pipeline",
+    "missing": "null means unobserved; WebSocket replay has no display measurements"
+  },
+  "summary": {
+    "latency_ms": {
+      "speech_to_segment_ms": {
+        "count": 18,
+        "p50": 4737.866,
+        "p95": 5127.88
+      },
+      "queue_ms": {
+        "count": 18,
+        "p50": 0.168,
+        "p95": 0.19
+      },
+      "lock_ms": {
+        "count": 18,
+        "p50": 0.004,
+        "p95": 0.004
+      },
+      "asr_ms": {
+        "count": 18,
+        "p50": 633.177,
+        "p95": 717.818
+      },
+      "translation_ms": {
+        "count": 18,
+        "p50": 0,
+        "p95": 86.518
+      },
+      "server_total_ms": {
+        "count": 18,
+        "p50": 5336.898,
+        "p95": 5800.651
+      },
+      "delivery_ms": {
+        "count": 18,
+        "p50": 0.297,
+        "p95": 0.408
+      },
+      "display_ms": {
+        "count": 18,
+        "p50": 32.5,
+        "p95": 206.4
+      },
+      "first_readable_ms": {
+        "count": 18,
+        "p50": 5498.599,
+        "p95": 5831.854
+      },
+      "final_ms": {
+        "count": 18,
+        "p50": 5498.599,
+        "p95": 5831.854
+      },
+      "clock_uncertainty_ms": {
+        "count": 18,
+        "p50": 1.198,
+        "p95": 1.247
+      },
+      "delivery_lower_ms": {
+        "count": 18,
+        "p50": 0,
+        "p95": 0
+      },
+      "delivery_upper_ms": {
+        "count": 18,
+        "p50": 1.49,
+        "p95": 1.556
+      },
+      "first_readable_lower_ms": {
+        "count": 18,
+        "p50": 5497.352,
+        "p95": 5830.656
+      },
+      "first_readable_upper_ms": {
+        "count": 18,
+        "p50": 5499.846,
+        "p95": 5833.051
+      },
+      "final_lower_ms": {
+        "count": 18,
+        "p50": 5497.352,
+        "p95": 5830.656
+      },
+      "final_upper_ms": {
+        "count": 18,
+        "p50": 5499.846,
+        "p95": 5833.051
+      }
+    },
+    "client_delivery_ms": {
+      "count": 0,
+      "p50": null,
+      "p95": null
+    },
+    "replay_lateness_ms": {
+      "count": 0,
+      "p50": null,
+      "p95": null
+    },
+    "counters": {
+      "segmented": 18,
+      "emitted": 18,
+      "dropped_queue": 0,
+      "skipped_stale": 0,
+      "empty_asr": 0,
+      "asr_failed": 0,
+      "dropped_audio_frames": 0,
+      "dropped_audio_samples": 0
+    },
+    "display_coverage": {
+      "emitted": 18,
+      "rendered": 18,
+      "unobserved": 0
+    }
+  },
+  "per_sample": {
+    "japanese": {
+      "latency_ms": {
+        "speech_to_segment_ms": {
+          "count": 2,
+          "p50": 2937.784,
+          "p95": 2937.842
+        },
+        "queue_ms": {
+          "count": 2,
+          "p50": 0.168,
+          "p95": 0.173
+        },
+        "lock_ms": {
+          "count": 2,
+          "p50": 0.004,
+          "p95": 0.004
+        },
+        "asr_ms": {
+          "count": 2,
+          "p50": 550.25,
+          "p95": 672.075
+        },
+        "translation_ms": {
+          "count": 2,
+          "p50": 78.351,
+          "p95": 86.518
+        },
+        "server_total_ms": {
+          "count": 2,
+          "p50": 3574.783,
+          "p95": 3688.509
+        },
+        "delivery_ms": {
+          "count": 2,
+          "p50": 0.302,
+          "p95": 0.343
+        },
+        "display_ms": {
+          "count": 2,
+          "p50": 180,
+          "p95": 206.4
+        },
+        "first_readable_ms": {
+          "count": 2,
+          "p50": 3755.142,
+          "p95": 3895.227
+        },
+        "final_ms": {
+          "count": 2,
+          "p50": 3755.142,
+          "p95": 3895.227
+        },
+        "clock_uncertainty_ms": {
+          "count": 2,
+          "p50": 1.148,
+          "p95": 1.149
+        },
+        "delivery_lower_ms": {
+          "count": 2,
+          "p50": 0,
+          "p95": 0
+        },
+        "delivery_upper_ms": {
+          "count": 2,
+          "p50": 1.451,
+          "p95": 1.491
+        },
+        "first_readable_lower_ms": {
+          "count": 2,
+          "p50": 3753.995,
+          "p95": 3894.079
+        },
+        "first_readable_upper_ms": {
+          "count": 2,
+          "p50": 3756.29,
+          "p95": 3896.376
+        },
+        "final_lower_ms": {
+          "count": 2,
+          "p50": 3753.995,
+          "p95": 3894.079
+        },
+        "final_upper_ms": {
+          "count": 2,
+          "p50": 3756.29,
+          "p95": 3896.376
+        }
+      },
+      "client_delivery_ms": {
+        "count": 0,
+        "p50": null,
+        "p95": null
+      },
+      "replay_lateness_ms": {
+        "count": 0,
+        "p50": null,
+        "p95": null
+      },
+      "counters": {
+        "segmented": 2,
+        "emitted": 2,
+        "dropped_queue": 0,
+        "skipped_stale": 0,
+        "empty_asr": 0,
+        "asr_failed": 0,
+        "dropped_audio_frames": 0,
+        "dropped_audio_samples": 0
+      },
+      "display_coverage": {
+        "emitted": 2,
+        "rendered": 2,
+        "unobserved": 0
+      }
+    },
+    "english": {
+      "latency_ms": {
+        "speech_to_segment_ms": {
+          "count": 4,
+          "p50": 4737.974,
+          "p95": 5117.872
+        },
+        "queue_ms": {
+          "count": 4,
+          "p50": 0.166,
+          "p95": 0.17
+        },
+        "lock_ms": {
+          "count": 4,
+          "p50": 0.003,
+          "p95": 0.004
+        },
+        "asr_ms": {
+          "count": 4,
+          "p50": 607.687,
+          "p95": 681.149
+        },
+        "translation_ms": {
+          "count": 4,
+          "p50": 0,
+          "p95": 0
+        },
+        "server_total_ms": {
+          "count": 4,
+          "p50": 5345.846,
+          "p95": 5799.267
+        },
+        "delivery_ms": {
+          "count": 4,
+          "p50": 0.269,
+          "p95": 0.338
+        },
+        "display_ms": {
+          "count": 4,
+          "p50": 32.5,
+          "p95": 175.7
+        },
+        "first_readable_ms": {
+          "count": 4,
+          "p50": 5521.902,
+          "p95": 5831.854
+        },
+        "final_ms": {
+          "count": 4,
+          "p50": 5521.902,
+          "p95": 5831.854
+        },
+        "clock_uncertainty_ms": {
+          "count": 4,
+          "p50": 1.198,
+          "p95": 1.247
+        },
+        "delivery_lower_ms": {
+          "count": 4,
+          "p50": 0,
+          "p95": 0
+        },
+        "delivery_upper_ms": {
+          "count": 4,
+          "p50": 1.491,
+          "p95": 1.536
+        },
+        "first_readable_lower_ms": {
+          "count": 4,
+          "p50": 5520.704,
+          "p95": 5830.656
+        },
+        "first_readable_upper_ms": {
+          "count": 4,
+          "p50": 5523.099,
+          "p95": 5833.051
+        },
+        "final_lower_ms": {
+          "count": 4,
+          "p50": 5520.704,
+          "p95": 5830.656
+        },
+        "final_upper_ms": {
+          "count": 4,
+          "p50": 5523.099,
+          "p95": 5833.051
+        }
+      },
+      "client_delivery_ms": {
+        "count": 0,
+        "p50": null,
+        "p95": null
+      },
+      "replay_lateness_ms": {
+        "count": 0,
+        "p50": null,
+        "p95": null
+      },
+      "counters": {
+        "segmented": 4,
+        "emitted": 4,
+        "dropped_queue": 0,
+        "skipped_stale": 0,
+        "empty_asr": 0,
+        "asr_failed": 0,
+        "dropped_audio_frames": 0,
+        "dropped_audio_samples": 0
+      },
+      "display_coverage": {
+        "emitted": 4,
+        "rendered": 4,
+        "unobserved": 0
+      }
+    },
+    "mixed": {
+      "latency_ms": {
+        "speech_to_segment_ms": {
+          "count": 6,
+          "p50": 4737.669,
+          "p95": 5127.88
+        },
+        "queue_ms": {
+          "count": 6,
+          "p50": 0.167,
+          "p95": 0.173
+        },
+        "lock_ms": {
+          "count": 6,
+          "p50": 0.004,
+          "p95": 0.004
+        },
+        "asr_ms": {
+          "count": 6,
+          "p50": 629.946,
+          "p95": 705.116
+        },
+        "translation_ms": {
+          "count": 6,
+          "p50": 0,
+          "p95": 86.11
+        },
+        "server_total_ms": {
+          "count": 6,
+          "p50": 5278.969,
+          "p95": 5800.651
+        },
+        "delivery_ms": {
+          "count": 6,
+          "p50": 0.282,
+          "p95": 0.408
+        },
+        "display_ms": {
+          "count": 6,
+          "p50": 31.4,
+          "p95": 181.5
+        },
+        "first_readable_ms": {
+          "count": 6,
+          "p50": 5305.169,
+          "p95": 5821.871
+        },
+        "final_ms": {
+          "count": 6,
+          "p50": 5305.169,
+          "p95": 5821.871
+        },
+        "clock_uncertainty_ms": {
+          "count": 6,
+          "p50": 1.149,
+          "p95": 1.198
+        },
+        "delivery_lower_ms": {
+          "count": 6,
+          "p50": 0,
+          "p95": 0
+        },
+        "delivery_upper_ms": {
+          "count": 6,
+          "p50": 1.45,
+          "p95": 1.556
+        },
+        "first_readable_lower_ms": {
+          "count": 6,
+          "p50": 5303.971,
+          "p95": 5820.722
+        },
+        "first_readable_upper_ms": {
+          "count": 6,
+          "p50": 5306.366,
+          "p95": 5823.019
+        },
+        "final_lower_ms": {
+          "count": 6,
+          "p50": 5303.971,
+          "p95": 5820.722
+        },
+        "final_upper_ms": {
+          "count": 6,
+          "p50": 5306.366,
+          "p95": 5823.019
+        }
+      },
+      "client_delivery_ms": {
+        "count": 0,
+        "p50": null,
+        "p95": null
+      },
+      "replay_lateness_ms": {
+        "count": 0,
+        "p50": null,
+        "p95": null
+      },
+      "counters": {
+        "segmented": 6,
+        "emitted": 6,
+        "dropped_queue": 0,
+        "skipped_stale": 0,
+        "empty_asr": 0,
+        "asr_failed": 0,
+        "dropped_audio_frames": 0,
+        "dropped_audio_samples": 0
+      },
+      "display_coverage": {
+        "emitted": 6,
+        "rendered": 6,
+        "unobserved": 0
+      }
+    },
+    "game-audio": {
+      "latency_ms": {
+        "speech_to_segment_ms": {
+          "count": 6,
+          "p50": 4737.723,
+          "p95": 5117.935
+        },
+        "queue_ms": {
+          "count": 6,
+          "p50": 0.17,
+          "p95": 0.19
+        },
+        "lock_ms": {
+          "count": 6,
+          "p50": 0.004,
+          "p95": 0.004
+        },
+        "asr_ms": {
+          "count": 6,
+          "p50": 633.177,
+          "p95": 717.818
+        },
+        "translation_ms": {
+          "count": 6,
+          "p50": 0,
+          "p95": 78.555
+        },
+        "server_total_ms": {
+          "count": 6,
+          "p50": 5449.048,
+          "p95": 5711.923
+        },
+        "delivery_ms": {
+          "count": 6,
+          "p50": 0.301,
+          "p95": 0.404
+        },
+        "display_ms": {
+          "count": 6,
+          "p50": 22.6,
+          "p95": 177.1
+        },
+        "first_readable_ms": {
+          "count": 6,
+          "p50": 5618.666,
+          "p95": 5738.842
+        },
+        "final_ms": {
+          "count": 6,
+          "p50": 5618.666,
+          "p95": 5738.842
+        },
+        "clock_uncertainty_ms": {
+          "count": 6,
+          "p50": 1.149,
+          "p95": 1.199
+        },
+        "delivery_lower_ms": {
+          "count": 6,
+          "p50": 0,
+          "p95": 0
+        },
+        "delivery_upper_ms": {
+          "count": 6,
+          "p50": 1.496,
+          "p95": 1.552
+        },
+        "first_readable_lower_ms": {
+          "count": 6,
+          "p50": 5617.518,
+          "p95": 5737.644
+        },
+        "first_readable_upper_ms": {
+          "count": 6,
+          "p50": 5619.815,
+          "p95": 5740.041
+        },
+        "final_lower_ms": {
+          "count": 6,
+          "p50": 5617.518,
+          "p95": 5737.644
+        },
+        "final_upper_ms": {
+          "count": 6,
+          "p50": 5619.815,
+          "p95": 5740.041
+        }
+      },
+      "client_delivery_ms": {
+        "count": 0,
+        "p50": null,
+        "p95": null
+      },
+      "replay_lateness_ms": {
+        "count": 0,
+        "p50": null,
+        "p95": null
+      },
+      "counters": {
+        "segmented": 6,
+        "emitted": 6,
+        "dropped_queue": 0,
+        "skipped_stale": 0,
+        "empty_asr": 0,
+        "asr_failed": 0,
+        "dropped_audio_frames": 0,
+        "dropped_audio_samples": 0
+      },
+      "display_coverage": {
+        "emitted": 6,
+        "rendered": 6,
+        "unobserved": 0
+      }
+    }
+  },
+  "gpu": {
+    "available": true,
+    "samples": 95,
+    "scope": "whole GPU, including desktop/other processes",
+    "boards": [
+      {
+        "index": 0,
+        "name": "NVIDIA GeForce RTX 3070",
+        "memory_total_mib": 8192.0,
+        "memory_used_mib": 6009.0,
+        "utilization_percent": 4.0,
+        "peak_memory_used_mib": 6018.0,
+        "peak_utilization_percent": 100.0
+      }
+    ]
+  },
+  "records": [
+    {
+      "sample_id": "japanese",
+      "sha256": "74e5ddaf0ebae54e59bc942af84cac503a93d9348b3d7a9bfe6f7ae2b0d2dcd8",
+      "iteration": 1,
+      "profile": "turbo / qwen3:4b-instruct-2507-q4_K_M",
+      "device": "cuda",
+      "events": [
+        {
+          "segment_id": 1,
+          "timestamps": {
+            "speech_started_ms": 616992985.156,
+            "speech_detected_ms": 616993113.156,
+            "segmented_ms": 616995922.998,
+            "enqueued_ms": 616995923.045,
+            "dequeued_ms": 616995923.218,
+            "inference_started_ms": 616995923.222,
+            "asr_finished_ms": 616996595.297,
+            "translation_started_ms": 616996595.304,
+            "translation_finished_ms": 616996673.655,
+            "result_ready_ms": 616996673.665,
+            "websocket_sent_ms": 616996673.681
+          },
+          "timings": {
+            "speech_to_segment_ms": 2937.842,
+            "queue_ms": 0.173,
+            "lock_ms": 0.004,
+            "asr_ms": 672.075,
+            "translation_ms": 78.351,
+            "server_total_ms": 3688.509
+          },
+          "outcome": "emitted",
+          "source": "live"
+        },
+        {
+          "segment_id": 1,
+          "timestamps": {
+            "speech_started_ms": 616992985.156,
+            "speech_detected_ms": 616993113.156,
+            "segmented_ms": 616995922.998,
+            "enqueued_ms": 616995923.045,
+            "dequeued_ms": 616995923.218,
+            "inference_started_ms": 616995923.222,
+            "asr_finished_ms": 616996595.297,
+            "translation_started_ms": 616996595.304,
+            "translation_finished_ms": 616996673.655,
+            "result_ready_ms": 616996673.665,
+            "websocket_sent_ms": 616996673.681,
+            "browser_received_ms": 616996673.983,
+            "first_readable_ms": 616996880.383,
+            "final_ms": 616996880.383,
+            "clock_uncertainty_ms": 1.149
+          },
+          "timings": {
+            "speech_to_segment_ms": 2937.842,
+            "queue_ms": 0.173,
+            "lock_ms": 0.004,
+            "asr_ms": 672.075,
+            "translation_ms": 78.351,
+            "server_total_ms": 3688.509,
+            "delivery_ms": 0.302,
+            "delivery_lower_ms": 0,
+            "delivery_upper_ms": 1.451,
+            "display_ms": 206.4,
+            "first_readable_ms": 3895.227,
+            "first_readable_lower_ms": 3894.079,
+            "first_readable_upper_ms": 3896.376,
+            "final_ms": 3895.227,
+            "final_lower_ms": 3894.079,
+            "final_upper_ms": 3896.376,
+            "clock_uncertainty_ms": 1.149
+          },
+          "outcome": "rendered",
+          "source": "live"
+        }
+      ],
+      "counters": {
+        "segmented": 1,
+        "emitted": 1,
+        "dropped_queue": 0,
+        "skipped_stale": 0,
+        "empty_asr": 0,
+        "asr_failed": 0,
+        "dropped_audio_frames": 0,
+        "dropped_audio_samples": 0
+      },
+      "clock_uncertainty_ms": 1.1486244035720825,
+      "rendered_segments": 1,
+      "unrendered_segments": 0,
+      "measurement_complete": true
+    },
+    {
+      "sample_id": "english",
+      "sha256": "999e3ec1609be148b13da7af65fe05ed184165dfc99684d8b67b498f864a2209",
+      "iteration": 1,
+      "profile": "turbo / qwen3:4b-instruct-2507-q4_K_M",
+      "device": "cuda",
+      "events": [
+        {
+          "segment_id": 1,
+          "timestamps": {
+            "speech_started_ms": 616998315.023,
+            "speech_detected_ms": 616998443.023,
+            "segmented_ms": 617003052.997,
+            "enqueued_ms": 617003053.058,
+            "dequeued_ms": 617003053.228,
+            "inference_started_ms": 617003053.232,
+            "asr_finished_ms": 617003637.749,
+            "translation_started_ms": 617003637.749,
+            "translation_finished_ms": 617003637.749,
+            "result_ready_ms": 617003637.761,
+            "websocket_sent_ms": 617003637.778
+          },
+          "timings": {
+            "speech_to_segment_ms": 4737.974,
+            "queue_ms": 0.17,
+            "lock_ms": 0.004,
+            "asr_ms": 584.517,
+            "translation_ms": 0,
+            "server_total_ms": 5322.738
+          },
+          "outcome": "emitted",
+          "source": "live"
+        },
+        {
+          "segment_id": 1,
+          "timestamps": {
+            "speech_started_ms": 616998315.023,
+            "speech_detected_ms": 616998443.023,
+            "segmented_ms": 617003052.997,
+            "enqueued_ms": 617003053.058,
+            "dequeued_ms": 617003053.228,
+            "inference_started_ms": 617003053.232,
+            "asr_finished_ms": 617003637.749,
+            "translation_started_ms": 617003637.749,
+            "translation_finished_ms": 617003637.749,
+            "result_ready_ms": 617003637.761,
+            "websocket_sent_ms": 617003637.778,
+            "browser_received_ms": 617003638.022,
+            "first_readable_ms": 617003813.622,
+            "final_ms": 617003813.622,
+            "clock_uncertainty_ms": 1.247
+          },
+          "timings": {
+            "speech_to_segment_ms": 4737.974,
+            "queue_ms": 0.17,
+            "lock_ms": 0.004,
+            "asr_ms": 584.517,
+            "translation_ms": 0,
+            "server_total_ms": 5322.738,
+            "delivery_ms": 0.244,
+            "delivery_lower_ms": 0,
+            "delivery_upper_ms": 1.491,
+            "display_ms": 175.6,
+            "first_readable_ms": 5498.599,
+            "first_readable_lower_ms": 5497.352,
+            "first_readable_upper_ms": 5499.846,
+            "final_ms": 5498.599,
+            "final_lower_ms": 5497.352,
+            "final_upper_ms": 5499.846,
+            "clock_uncertainty_ms": 1.247
+          },
+          "outcome": "rendered",
+          "source": "live"
+        },
+        {
+          "segment_id": 2,
+          "timestamps": {
+            "speech_started_ms": 617003055.026,
+            "speech_detected_ms": 617003183.026,
+            "segmented_ms": 617008172.886,
+            "enqueued_ms": 617008172.946,
+            "dequeued_ms": 617008173.109,
+            "inference_started_ms": 617008173.112,
+            "asr_finished_ms": 617008830.703,
+            "translation_started_ms": 617008830.703,
+            "translation_finished_ms": 617008830.703,
+            "result_ready_ms": 617008830.716,
+            "websocket_sent_ms": 617008830.735
+          },
+          "timings": {
+            "speech_to_segment_ms": 5117.86,
+            "queue_ms": 0.163,
+            "lock_ms": 0.003,
+            "asr_ms": 657.591,
+            "translation_ms": 0,
+            "server_total_ms": 5775.69
+          },
+          "outcome": "emitted",
+          "source": "live"
+        },
+        {
+          "segment_id": 2,
+          "timestamps": {
+            "speech_started_ms": 617003055.026,
+            "speech_detected_ms": 617003183.026,
+            "segmented_ms": 617008172.886,
+            "enqueued_ms": 617008172.946,
+            "dequeued_ms": 617008173.109,
+            "inference_started_ms": 617008173.112,
+            "asr_finished_ms": 617008830.703,
+            "translation_started_ms": 617008830.703,
+            "translation_finished_ms": 617008830.703,
+            "result_ready_ms": 617008830.716,
+            "websocket_sent_ms": 617008830.735,
+            "browser_received_ms": 617008831.022,
+            "first_readable_ms": 617008863.522,
+            "final_ms": 617008863.522,
+            "clock_uncertainty_ms": 1.247
+          },
+          "timings": {
+            "speech_to_segment_ms": 5117.86,
+            "queue_ms": 0.163,
+            "lock_ms": 0.003,
+            "asr_ms": 657.591,
+            "translation_ms": 0,
+            "server_total_ms": 5775.69,
+            "delivery_ms": 0.287,
+            "delivery_lower_ms": 0,
+            "delivery_upper_ms": 1.534,
+            "display_ms": 32.5,
+            "first_readable_ms": 5808.496,
+            "first_readable_lower_ms": 5807.249,
+            "first_readable_upper_ms": 5809.743,
+            "final_ms": 5808.496,
+            "final_lower_ms": 5807.249,
+            "final_upper_ms": 5809.743,
+            "clock_uncertainty_ms": 1.247
+          },
+          "outcome": "rendered",
+          "source": "live"
+        }
+      ],
+      "counters": {
+        "segmented": 2,
+        "emitted": 2,
+        "dropped_queue": 0,
+        "skipped_stale": 0,
+        "empty_asr": 0,
+        "asr_failed": 0,
+        "dropped_audio_frames": 0,
+        "dropped_audio_samples": 0
+      },
+      "clock_uncertainty_ms": 1.2471000386238098,
+      "rendered_segments": 2,
+      "unrendered_segments": 0,
+      "measurement_complete": true
+    },
+    {
+      "sample_id": "mixed",
+      "sha256": "0e07d23304379125af04ff7f8611cace62a600fa9e9e6d48333e6cfaf1cc5eb8",
+      "iteration": 1,
+      "profile": "turbo / qwen3:4b-instruct-2507-q4_K_M",
+      "device": "cuda",
+      "events": [
+        {
+          "segment_id": 1,
+          "timestamps": {
+            "speech_started_ms": 617010784.862,
+            "speech_detected_ms": 617010912.862,
+            "segmented_ms": 617013722.719,
+            "enqueued_ms": 617013722.765,
+            "dequeued_ms": 617013722.938,
+            "inference_started_ms": 617013722.942,
+            "asr_finished_ms": 617014402.606,
+            "translation_started_ms": 617014402.613,
+            "translation_finished_ms": 617014481.566,
+            "result_ready_ms": 617014481.575,
+            "websocket_sent_ms": 617014481.592
+          },
+          "timings": {
+            "speech_to_segment_ms": 2937.857,
+            "queue_ms": 0.173,
+            "lock_ms": 0.004,
+            "asr_ms": 679.664,
+            "translation_ms": 78.953,
+            "server_total_ms": 3696.713
+          },
+          "outcome": "emitted",
+          "source": "live"
+        },
+        {
+          "segment_id": 1,
+          "timestamps": {
+            "speech_started_ms": 617010784.862,
+            "speech_detected_ms": 617010912.862,
+            "segmented_ms": 617013722.719,
+            "enqueued_ms": 617013722.765,
+            "dequeued_ms": 617013722.938,
+            "inference_started_ms": 617013722.942,
+            "asr_finished_ms": 617014402.606,
+            "translation_started_ms": 617014402.613,
+            "translation_finished_ms": 617014481.566,
+            "result_ready_ms": 617014481.575,
+            "websocket_sent_ms": 617014481.592,
+            "browser_received_ms": 617014482,
+            "first_readable_ms": 617014663.5,
+            "final_ms": 617014663.5,
+            "clock_uncertainty_ms": 1.149
+          },
+          "timings": {
+            "speech_to_segment_ms": 2937.857,
+            "queue_ms": 0.173,
+            "lock_ms": 0.004,
+            "asr_ms": 679.664,
+            "translation_ms": 78.953,
+            "server_total_ms": 3696.713,
+            "delivery_ms": 0.408,
+            "delivery_lower_ms": 0,
+            "delivery_upper_ms": 1.556,
+            "display_ms": 181.5,
+            "first_readable_ms": 3878.638,
+            "first_readable_lower_ms": 3877.489,
+            "first_readable_upper_ms": 3879.786,
+            "final_ms": 3878.638,
+            "final_lower_ms": 3877.489,
+            "final_upper_ms": 3879.786,
+            "clock_uncertainty_ms": 1.149
+          },
+          "outcome": "rendered",
+          "source": "live"
+        },
+        {
+          "segment_id": 2,
+          "timestamps": {
+            "speech_started_ms": 617014494.808,
+            "speech_detected_ms": 617014622.808,
+            "segmented_ms": 617019232.674,
+            "enqueued_ms": 617019232.734,
+            "dequeued_ms": 617019232.902,
+            "inference_started_ms": 617019232.906,
+            "asr_finished_ms": 617019831.694,
+            "translation_started_ms": 617019831.694,
+            "translation_finished_ms": 617019831.694,
+            "result_ready_ms": 617019831.706,
+            "websocket_sent_ms": 617019831.724
+          },
+          "timings": {
+            "speech_to_segment_ms": 4737.866,
+            "queue_ms": 0.168,
+            "lock_ms": 0.004,
+            "asr_ms": 598.788,
+            "translation_ms": 0,
+            "server_total_ms": 5336.898
+          },
+          "outcome": "emitted",
+          "source": "live"
+        },
+        {
+          "segment_id": 2,
+          "timestamps": {
+            "speech_started_ms": 617014494.808,
+            "speech_detected_ms": 617014622.808,
+            "segmented_ms": 617019232.674,
+            "enqueued_ms": 617019232.734,
+            "dequeued_ms": 617019232.902,
+            "inference_started_ms": 617019232.906,
+            "asr_finished_ms": 617019831.694,
+            "translation_started_ms": 617019831.694,
+            "translation_finished_ms": 617019831.694,
+            "result_ready_ms": 617019831.706,
+            "websocket_sent_ms": 617019831.724,
+            "browser_received_ms": 617019832,
+            "first_readable_ms": 617019863.399,
+            "final_ms": 617019863.399,
+            "clock_uncertainty_ms": 1.149
+          },
+          "timings": {
+            "speech_to_segment_ms": 4737.866,
+            "queue_ms": 0.168,
+            "lock_ms": 0.004,
+            "asr_ms": 598.788,
+            "translation_ms": 0,
+            "server_total_ms": 5336.898,
+            "delivery_ms": 0.276,
+            "delivery_lower_ms": 0,
+            "delivery_upper_ms": 1.424,
+            "display_ms": 31.4,
+            "first_readable_ms": 5368.591,
+            "first_readable_lower_ms": 5367.443,
+            "first_readable_upper_ms": 5369.74,
+            "final_ms": 5368.591,
+            "final_lower_ms": 5367.443,
+            "final_upper_ms": 5369.74,
+            "clock_uncertainty_ms": 1.149
+          },
+          "outcome": "rendered",
+          "source": "live"
+        },
+        {
+          "segment_id": 3,
+          "timestamps": {
+            "speech_started_ms": 617019224.729,
+            "speech_detected_ms": 617019352.729,
+            "segmented_ms": 617024352.609,
+            "enqueued_ms": 617024352.668,
+            "dequeued_ms": 617024352.839,
+            "inference_started_ms": 617024352.843,
+            "asr_finished_ms": 617025025.368,
+            "translation_started_ms": 617025025.368,
+            "translation_finished_ms": 617025025.368,
+            "result_ready_ms": 617025025.38,
+            "websocket_sent_ms": 617025025.398
+          },
+          "timings": {
+            "speech_to_segment_ms": 5127.88,
+            "queue_ms": 0.171,
+            "lock_ms": 0.004,
+            "asr_ms": 672.525,
+            "translation_ms": 0,
+            "server_total_ms": 5800.651
+          },
+          "outcome": "emitted",
+          "source": "live"
+        },
+        {
+          "segment_id": 3,
+          "timestamps": {
+            "speech_started_ms": 617019224.729,
+            "speech_detected_ms": 617019352.729,
+            "segmented_ms": 617024352.609,
+            "enqueued_ms": 617024352.668,
+            "dequeued_ms": 617024352.839,
+            "inference_started_ms": 617024352.843,
+            "asr_finished_ms": 617025025.368,
+            "translation_started_ms": 617025025.368,
+            "translation_finished_ms": 617025025.368,
+            "result_ready_ms": 617025025.38,
+            "websocket_sent_ms": 617025025.398,
+            "browser_received_ms": 617025025.699,
+            "first_readable_ms": 617025046.6,
+            "final_ms": 617025046.6,
+            "clock_uncertainty_ms": 1.149
+          },
+          "timings": {
+            "speech_to_segment_ms": 5127.88,
+            "queue_ms": 0.171,
+            "lock_ms": 0.004,
+            "asr_ms": 672.525,
+            "translation_ms": 0,
+            "server_total_ms": 5800.651,
+            "delivery_ms": 0.301,
+            "delivery_lower_ms": 0,
+            "delivery_upper_ms": 1.45,
+            "display_ms": 20.9,
+            "first_readable_ms": 5821.871,
+            "first_readable_lower_ms": 5820.722,
+            "first_readable_upper_ms": 5823.019,
+            "final_ms": 5821.871,
+            "final_lower_ms": 5820.722,
+            "final_upper_ms": 5823.019,
+            "clock_uncertainty_ms": 1.149
+          },
+          "outcome": "rendered",
+          "source": "live"
+        }
+      ],
+      "counters": {
+        "segmented": 3,
+        "emitted": 3,
+        "dropped_queue": 0,
+        "skipped_stale": 0,
+        "empty_asr": 0,
+        "asr_failed": 0,
+        "dropped_audio_frames": 0,
+        "dropped_audio_samples": 0
+      },
+      "clock_uncertainty_ms": 1.1486244631767273,
+      "rendered_segments": 3,
+      "unrendered_segments": 0,
+      "measurement_complete": true
+    },
+    {
+      "sample_id": "game-audio",
+      "sha256": "43368d6945828dab2fdfbb79ca72da762f800db014f78ac2882f092d5e57b6fb",
+      "iteration": 1,
+      "profile": "turbo / qwen3:4b-instruct-2507-q4_K_M",
+      "device": "cuda",
+      "events": [
+        {
+          "segment_id": 1,
+          "timestamps": {
+            "speech_started_ms": 617026594.783,
+            "speech_detected_ms": 617026722.783,
+            "segmented_ms": 617031332.506,
+            "enqueued_ms": 617031332.57,
+            "dequeued_ms": 617031332.746,
+            "inference_started_ms": 617031332.749,
+            "asr_finished_ms": 617031965.926,
+            "translation_started_ms": 617031965.933,
+            "translation_finished_ms": 617032043.823,
+            "result_ready_ms": 617032043.831,
+            "websocket_sent_ms": 617032043.846
+          },
+          "timings": {
+            "speech_to_segment_ms": 4737.723,
+            "queue_ms": 0.176,
+            "lock_ms": 0.003,
+            "asr_ms": 633.177,
+            "translation_ms": 77.89,
+            "server_total_ms": 5449.048
+          },
+          "outcome": "emitted",
+          "source": "live"
+        },
+        {
+          "segment_id": 1,
+          "timestamps": {
+            "speech_started_ms": 617026594.783,
+            "speech_detected_ms": 617026722.783,
+            "segmented_ms": 617031332.506,
+            "enqueued_ms": 617031332.57,
+            "dequeued_ms": 617031332.746,
+            "inference_started_ms": 617031332.749,
+            "asr_finished_ms": 617031965.926,
+            "translation_started_ms": 617031965.933,
+            "translation_finished_ms": 617032043.823,
+            "result_ready_ms": 617032043.831,
+            "websocket_sent_ms": 617032043.846,
+            "browser_received_ms": 617032044.25,
+            "first_readable_ms": 617032213.449,
+            "final_ms": 617032213.449,
+            "clock_uncertainty_ms": 1.149
+          },
+          "timings": {
+            "speech_to_segment_ms": 4737.723,
+            "queue_ms": 0.176,
+            "lock_ms": 0.003,
+            "asr_ms": 633.177,
+            "translation_ms": 77.89,
+            "server_total_ms": 5449.048,
+            "delivery_ms": 0.404,
+            "delivery_lower_ms": 0,
+            "delivery_upper_ms": 1.552,
+            "display_ms": 169.2,
+            "first_readable_ms": 5618.666,
+            "first_readable_lower_ms": 5617.518,
+            "first_readable_upper_ms": 5619.815,
+            "final_ms": 5618.666,
+            "final_lower_ms": 5617.518,
+            "final_upper_ms": 5619.815,
+            "clock_uncertainty_ms": 1.149
+          },
+          "outcome": "rendered",
+          "source": "live"
+        },
+        {
+          "segment_id": 2,
+          "timestamps": {
+            "speech_started_ms": 617031334.607,
+            "speech_detected_ms": 617031462.607,
+            "segmented_ms": 617036452.478,
+            "enqueued_ms": 617036452.538,
+            "dequeued_ms": 617036452.708,
+            "inference_started_ms": 617036452.712,
+            "asr_finished_ms": 617037007.106,
+            "translation_started_ms": 617037007.106,
+            "translation_finished_ms": 617037007.106,
+            "result_ready_ms": 617037007.118,
+            "websocket_sent_ms": 617037007.135
+          },
+          "timings": {
+            "speech_to_segment_ms": 5117.871,
+            "queue_ms": 0.17,
+            "lock_ms": 0.004,
+            "asr_ms": 554.394,
+            "translation_ms": 0,
+            "server_total_ms": 5672.511
+          },
+          "outcome": "emitted",
+          "source": "live"
+        },
+        {
+          "segment_id": 2,
+          "timestamps": {
+            "speech_started_ms": 617031334.607,
+            "speech_detected_ms": 617031462.607,
+            "segmented_ms": 617036452.478,
+            "enqueued_ms": 617036452.538,
+            "dequeued_ms": 617036452.708,
+            "inference_started_ms": 617036452.712,
+            "asr_finished_ms": 617037007.106,
+            "translation_started_ms": 617037007.106,
+            "translation_finished_ms": 617037007.106,
+            "result_ready_ms": 617037007.118,
+            "websocket_sent_ms": 617037007.135,
+            "browser_received_ms": 617037007.449,
+            "first_readable_ms": 617037030.049,
+            "final_ms": 617037030.049,
+            "clock_uncertainty_ms": 1.149
+          },
+          "timings": {
+            "speech_to_segment_ms": 5117.871,
+            "queue_ms": 0.17,
+            "lock_ms": 0.004,
+            "asr_ms": 554.394,
+            "translation_ms": 0,
+            "server_total_ms": 5672.511,
+            "delivery_ms": 0.314,
+            "delivery_lower_ms": 0,
+            "delivery_upper_ms": 1.463,
+            "display_ms": 22.6,
+            "first_readable_ms": 5695.442,
+            "first_readable_lower_ms": 5694.294,
+            "first_readable_upper_ms": 5696.591,
+            "final_ms": 5695.442,
+            "final_lower_ms": 5694.294,
+            "final_upper_ms": 5696.591,
+            "clock_uncertainty_ms": 1.149
+          },
+          "outcome": "rendered",
+          "source": "live"
+        },
+        {
+          "segment_id": 3,
+          "timestamps": {
+            "speech_started_ms": 617036454.619,
+            "speech_detected_ms": 617036582.619,
+            "segmented_ms": 617040932.3,
+            "enqueued_ms": 617040932.353,
+            "dequeued_ms": 617040932.514,
+            "inference_started_ms": 617040932.518,
+            "asr_finished_ms": 617041582.938,
+            "translation_started_ms": 617041582.938,
+            "translation_finished_ms": 617041582.938,
+            "result_ready_ms": 617041582.948,
+            "websocket_sent_ms": 617041582.966
+          },
+          "timings": {
+            "speech_to_segment_ms": 4477.681,
+            "queue_ms": 0.161,
+            "lock_ms": 0.004,
+            "asr_ms": 650.42,
+            "translation_ms": 0,
+            "server_total_ms": 5128.329
+          },
+          "outcome": "emitted",
+          "source": "live"
+        },
+        {
+          "segment_id": 3,
+          "timestamps": {
+            "speech_started_ms": 617036454.619,
+            "speech_detected_ms": 617036582.619,
+            "segmented_ms": 617040932.3,
+            "enqueued_ms": 617040932.353,
+            "dequeued_ms": 617040932.514,
+            "inference_started_ms": 617040932.518,
+            "asr_finished_ms": 617041582.938,
+            "translation_started_ms": 617041582.938,
+            "translation_finished_ms": 617041582.938,
+            "result_ready_ms": 617041582.948,
+            "websocket_sent_ms": 617041582.966,
+            "browser_received_ms": 617041583.25,
+            "first_readable_ms": 617041596.549,
+            "final_ms": 617041596.549,
+            "clock_uncertainty_ms": 1.149
+          },
+          "timings": {
+            "speech_to_segment_ms": 4477.681,
+            "queue_ms": 0.161,
+            "lock_ms": 0.004,
+            "asr_ms": 650.42,
+            "translation_ms": 0,
+            "server_total_ms": 5128.329,
+            "delivery_ms": 0.284,
+            "delivery_lower_ms": 0,
+            "delivery_upper_ms": 1.432,
+            "display_ms": 13.3,
+            "first_readable_ms": 5141.93,
+            "first_readable_lower_ms": 5140.782,
+            "first_readable_upper_ms": 5143.079,
+            "final_ms": 5141.93,
+            "final_lower_ms": 5140.782,
+            "final_upper_ms": 5143.079,
+            "clock_uncertainty_ms": 1.149
+          },
+          "outcome": "rendered",
+          "source": "live"
+        }
+      ],
+      "counters": {
+        "segmented": 3,
+        "emitted": 3,
+        "dropped_queue": 0,
+        "skipped_stale": 0,
+        "empty_asr": 0,
+        "asr_failed": 0,
+        "dropped_audio_frames": 0,
+        "dropped_audio_samples": 0
+      },
+      "clock_uncertainty_ms": 1.1485023332595825,
+      "rendered_segments": 3,
+      "unrendered_segments": 0,
+      "measurement_complete": true
+    },
+    {
+      "sample_id": "japanese",
+      "sha256": "74e5ddaf0ebae54e59bc942af84cac503a93d9348b3d7a9bfe6f7ae2b0d2dcd8",
+      "iteration": 2,
+      "profile": "turbo / qwen3:4b-instruct-2507-q4_K_M",
+      "device": "cuda",
+      "events": [
+        {
+          "segment_id": 1,
+          "timestamps": {
+            "speech_started_ms": 617042924.465,
+            "speech_detected_ms": 617043052.465,
+            "segmented_ms": 617045862.249,
+            "enqueued_ms": 617045862.294,
+            "dequeued_ms": 617045862.462,
+            "inference_started_ms": 617045862.466,
+            "asr_finished_ms": 617046412.716,
+            "translation_started_ms": 617046412.723,
+            "translation_finished_ms": 617046499.241,
+            "result_ready_ms": 617046499.248,
+            "websocket_sent_ms": 617046499.264
+          },
+          "timings": {
+            "speech_to_segment_ms": 2937.784,
+            "queue_ms": 0.168,
+            "lock_ms": 0.004,
+            "asr_ms": 550.25,
+            "translation_ms": 86.518,
+            "server_total_ms": 3574.783
+          },
+          "outcome": "emitted",
+          "source": "live"
+        },
+        {
+          "segment_id": 1,
+          "timestamps": {
+            "speech_started_ms": 617042924.465,
+            "speech_detected_ms": 617043052.465,
+            "segmented_ms": 617045862.249,
+            "enqueued_ms": 617045862.294,
+            "dequeued_ms": 617045862.462,
+            "inference_started_ms": 617045862.466,
+            "asr_finished_ms": 617046412.716,
+            "translation_started_ms": 617046412.723,
+            "translation_finished_ms": 617046499.241,
+            "result_ready_ms": 617046499.248,
+            "websocket_sent_ms": 617046499.264,
+            "browser_received_ms": 617046499.607,
+            "first_readable_ms": 617046679.607,
+            "final_ms": 617046679.607,
+            "clock_uncertainty_ms": 1.148
+          },
+          "timings": {
+            "speech_to_segment_ms": 2937.784,
+            "queue_ms": 0.168,
+            "lock_ms": 0.004,
+            "asr_ms": 550.25,
+            "translation_ms": 86.518,
+            "server_total_ms": 3574.783,
+            "delivery_ms": 0.343,
+            "delivery_lower_ms": 0,
+            "delivery_upper_ms": 1.491,
+            "display_ms": 180,
+            "first_readable_ms": 3755.142,
+            "first_readable_lower_ms": 3753.995,
+            "first_readable_upper_ms": 3756.29,
+            "final_ms": 3755.142,
+            "final_lower_ms": 3753.995,
+            "final_upper_ms": 3756.29,
+            "clock_uncertainty_ms": 1.148
+          },
+          "outcome": "rendered",
+          "source": "live"
+        }
+      ],
+      "counters": {
+        "segmented": 1,
+        "emitted": 1,
+        "dropped_queue": 0,
+        "skipped_stale": 0,
+        "empty_asr": 0,
+        "asr_failed": 0,
+        "dropped_audio_frames": 0,
+        "dropped_audio_samples": 0
+      },
+      "clock_uncertainty_ms": 1.1475023461341858,
+      "rendered_segments": 1,
+      "unrendered_segments": 0,
+      "measurement_complete": true
+    },
+    {
+      "sample_id": "english",
+      "sha256": "999e3ec1609be148b13da7af65fe05ed184165dfc99684d8b67b498f864a2209",
+      "iteration": 2,
+      "profile": "turbo / qwen3:4b-instruct-2507-q4_K_M",
+      "device": "cuda",
+      "events": [
+        {
+          "segment_id": 1,
+          "timestamps": {
+            "speech_started_ms": 617048274.292,
+            "speech_detected_ms": 617048402.292,
+            "segmented_ms": 617053012.204,
+            "enqueued_ms": 617053012.266,
+            "dequeued_ms": 617053012.436,
+            "inference_started_ms": 617053012.44,
+            "asr_finished_ms": 617053620.127,
+            "translation_started_ms": 617053620.127,
+            "translation_finished_ms": 617053620.127,
+            "result_ready_ms": 617053620.138,
+            "websocket_sent_ms": 617053620.155
+          },
+          "timings": {
+            "speech_to_segment_ms": 4737.912,
+            "queue_ms": 0.17,
+            "lock_ms": 0.004,
+            "asr_ms": 607.687,
+            "translation_ms": 0,
+            "server_total_ms": 5345.846
+          },
+          "outcome": "emitted",
+          "source": "live"
+        },
+        {
+          "segment_id": 1,
+          "timestamps": {
+            "speech_started_ms": 617048274.292,
+            "speech_detected_ms": 617048402.292,
+            "segmented_ms": 617053012.204,
+            "enqueued_ms": 617053012.266,
+            "dequeued_ms": 617053012.436,
+            "inference_started_ms": 617053012.44,
+            "asr_finished_ms": 617053620.127,
+            "translation_started_ms": 617053620.127,
+            "translation_finished_ms": 617053620.127,
+            "result_ready_ms": 617053620.138,
+            "websocket_sent_ms": 617053620.155,
+            "browser_received_ms": 617053620.493,
+            "first_readable_ms": 617053796.194,
+            "final_ms": 617053796.194,
+            "clock_uncertainty_ms": 1.198
+          },
+          "timings": {
+            "speech_to_segment_ms": 4737.912,
+            "queue_ms": 0.17,
+            "lock_ms": 0.004,
+            "asr_ms": 607.687,
+            "translation_ms": 0,
+            "server_total_ms": 5345.846,
+            "delivery_ms": 0.338,
+            "delivery_lower_ms": 0,
+            "delivery_upper_ms": 1.536,
+            "display_ms": 175.7,
+            "first_readable_ms": 5521.902,
+            "first_readable_lower_ms": 5520.704,
+            "first_readable_upper_ms": 5523.099,
+            "final_ms": 5521.902,
+            "final_lower_ms": 5520.704,
+            "final_upper_ms": 5523.099,
+            "clock_uncertainty_ms": 1.198
+          },
+          "outcome": "rendered",
+          "source": "live"
+        },
+        {
+          "segment_id": 2,
+          "timestamps": {
+            "speech_started_ms": 617053014.24,
+            "speech_detected_ms": 617053142.24,
+            "segmented_ms": 617058132.112,
+            "enqueued_ms": 617058132.177,
+            "dequeued_ms": 617058132.343,
+            "inference_started_ms": 617058132.346,
+            "asr_finished_ms": 617058813.495,
+            "translation_started_ms": 617058813.495,
+            "translation_finished_ms": 617058813.495,
+            "result_ready_ms": 617058813.507,
+            "websocket_sent_ms": 617058813.524
+          },
+          "timings": {
+            "speech_to_segment_ms": 5117.872,
+            "queue_ms": 0.166,
+            "lock_ms": 0.003,
+            "asr_ms": 681.149,
+            "translation_ms": 0,
+            "server_total_ms": 5799.267
+          },
+          "outcome": "emitted",
+          "source": "live"
+        },
+        {
+          "segment_id": 2,
+          "timestamps": {
+            "speech_started_ms": 617053014.24,
+            "speech_detected_ms": 617053142.24,
+            "segmented_ms": 617058132.112,
+            "enqueued_ms": 617058132.177,
+            "dequeued_ms": 617058132.343,
+            "inference_started_ms": 617058132.346,
+            "asr_finished_ms": 617058813.495,
+            "translation_started_ms": 617058813.495,
+            "translation_finished_ms": 617058813.495,
+            "result_ready_ms": 617058813.507,
+            "websocket_sent_ms": 617058813.524,
+            "browser_received_ms": 617058813.793,
+            "first_readable_ms": 617058846.094,
+            "final_ms": 617058846.094,
+            "clock_uncertainty_ms": 1.198
+          },
+          "timings": {
+            "speech_to_segment_ms": 5117.872,
+            "queue_ms": 0.166,
+            "lock_ms": 0.003,
+            "asr_ms": 681.149,
+            "translation_ms": 0,
+            "server_total_ms": 5799.267,
+            "delivery_ms": 0.269,
+            "delivery_lower_ms": 0,
+            "delivery_upper_ms": 1.467,
+            "display_ms": 32.3,
+            "first_readable_ms": 5831.854,
+            "first_readable_lower_ms": 5830.656,
+            "first_readable_upper_ms": 5833.051,
+            "final_ms": 5831.854,
+            "final_lower_ms": 5830.656,
+            "final_upper_ms": 5833.051,
+            "clock_uncertainty_ms": 1.198
+          },
+          "outcome": "rendered",
+          "source": "live"
+        }
+      ],
+      "counters": {
+        "segmented": 2,
+        "emitted": 2,
+        "dropped_queue": 0,
+        "skipped_stale": 0,
+        "empty_asr": 0,
+        "asr_failed": 0,
+        "dropped_audio_frames": 0,
+        "dropped_audio_samples": 0
+      },
+      "clock_uncertainty_ms": 1.1976732445716858,
+      "rendered_segments": 2,
+      "unrendered_segments": 0,
+      "measurement_complete": true
+    },
+    {
+      "sample_id": "mixed",
+      "sha256": "0e07d23304379125af04ff7f8611cace62a600fa9e9e6d48333e6cfaf1cc5eb8",
+      "iteration": 2,
+      "profile": "turbo / qwen3:4b-instruct-2507-q4_K_M",
+      "device": "cuda",
+      "events": [
+        {
+          "segment_id": 1,
+          "timestamps": {
+            "speech_started_ms": 617060744.192,
+            "speech_detected_ms": 617060872.192,
+            "segmented_ms": 617063682.011,
+            "enqueued_ms": 617063682.06,
+            "dequeued_ms": 617063682.209,
+            "inference_started_ms": 617063682.213,
+            "asr_finished_ms": 617064387.329,
+            "translation_started_ms": 617064387.335,
+            "translation_finished_ms": 617064473.445,
+            "result_ready_ms": 617064473.453,
+            "websocket_sent_ms": 617064473.469
+          },
+          "timings": {
+            "speech_to_segment_ms": 2937.819,
+            "queue_ms": 0.149,
+            "lock_ms": 0.004,
+            "asr_ms": 705.116,
+            "translation_ms": 86.11,
+            "server_total_ms": 3729.261
+          },
+          "outcome": "emitted",
+          "source": "live"
+        },
+        {
+          "segment_id": 1,
+          "timestamps": {
+            "speech_started_ms": 617060744.192,
+            "speech_detected_ms": 617060872.192,
+            "segmented_ms": 617063682.011,
+            "enqueued_ms": 617063682.06,
+            "dequeued_ms": 617063682.209,
+            "inference_started_ms": 617063682.213,
+            "asr_finished_ms": 617064387.329,
+            "translation_started_ms": 617064387.335,
+            "translation_finished_ms": 617064473.445,
+            "result_ready_ms": 617064473.453,
+            "websocket_sent_ms": 617064473.469,
+            "browser_received_ms": 617064473.705,
+            "first_readable_ms": 617064646.105,
+            "final_ms": 617064646.105,
+            "clock_uncertainty_ms": 1.198
+          },
+          "timings": {
+            "speech_to_segment_ms": 2937.819,
+            "queue_ms": 0.149,
+            "lock_ms": 0.004,
+            "asr_ms": 705.116,
+            "translation_ms": 86.11,
+            "server_total_ms": 3729.261,
+            "delivery_ms": 0.236,
+            "delivery_lower_ms": 0,
+            "delivery_upper_ms": 1.433,
+            "display_ms": 172.4,
+            "first_readable_ms": 3901.913,
+            "first_readable_lower_ms": 3900.715,
+            "first_readable_upper_ms": 3903.11,
+            "final_ms": 3901.913,
+            "final_lower_ms": 3900.715,
+            "final_upper_ms": 3903.11,
+            "clock_uncertainty_ms": 1.198
+          },
+          "outcome": "rendered",
+          "source": "live"
+        },
+        {
+          "segment_id": 2,
+          "timestamps": {
+            "speech_started_ms": 617064324.336,
+            "speech_detected_ms": 617064452.336,
+            "segmented_ms": 617069062.005,
+            "enqueued_ms": 617069062.065,
+            "dequeued_ms": 617069062.215,
+            "inference_started_ms": 617069062.219,
+            "asr_finished_ms": 617069603.294,
+            "translation_started_ms": 617069603.294,
+            "translation_finished_ms": 617069603.294,
+            "result_ready_ms": 617069603.305,
+            "websocket_sent_ms": 617069603.322
+          },
+          "timings": {
+            "speech_to_segment_ms": 4737.669,
+            "queue_ms": 0.15,
+            "lock_ms": 0.004,
+            "asr_ms": 541.075,
+            "translation_ms": 0,
+            "server_total_ms": 5278.969
+          },
+          "outcome": "emitted",
+          "source": "live"
+        },
+        {
+          "segment_id": 2,
+          "timestamps": {
+            "speech_started_ms": 617064324.336,
+            "speech_detected_ms": 617064452.336,
+            "segmented_ms": 617069062.005,
+            "enqueued_ms": 617069062.065,
+            "dequeued_ms": 617069062.215,
+            "inference_started_ms": 617069062.219,
+            "asr_finished_ms": 617069603.294,
+            "translation_started_ms": 617069603.294,
+            "translation_finished_ms": 617069603.294,
+            "result_ready_ms": 617069603.305,
+            "websocket_sent_ms": 617069603.322,
+            "browser_received_ms": 617069603.604,
+            "first_readable_ms": 617069629.505,
+            "final_ms": 617069629.505,
+            "clock_uncertainty_ms": 1.198
+          },
+          "timings": {
+            "speech_to_segment_ms": 4737.669,
+            "queue_ms": 0.15,
+            "lock_ms": 0.004,
+            "asr_ms": 541.075,
+            "translation_ms": 0,
+            "server_total_ms": 5278.969,
+            "delivery_ms": 0.282,
+            "delivery_lower_ms": 0,
+            "delivery_upper_ms": 1.48,
+            "display_ms": 25.9,
+            "first_readable_ms": 5305.169,
+            "first_readable_lower_ms": 5303.971,
+            "first_readable_upper_ms": 5306.366,
+            "final_ms": 5305.169,
+            "final_lower_ms": 5303.971,
+            "final_upper_ms": 5306.366,
+            "clock_uncertainty_ms": 1.198
+          },
+          "outcome": "rendered",
+          "source": "live"
+        },
+        {
+          "segment_id": 3,
+          "timestamps": {
+            "speech_started_ms": 617069063.982,
+            "speech_detected_ms": 617069191.982,
+            "segmented_ms": 617074181.907,
+            "enqueued_ms": 617074181.968,
+            "dequeued_ms": 617074182.135,
+            "inference_started_ms": 617074182.138,
+            "asr_finished_ms": 617074812.084,
+            "translation_started_ms": 617074812.084,
+            "translation_finished_ms": 617074812.084,
+            "result_ready_ms": 617074812.095,
+            "websocket_sent_ms": 617074812.112
+          },
+          "timings": {
+            "speech_to_segment_ms": 5117.925,
+            "queue_ms": 0.167,
+            "lock_ms": 0.003,
+            "asr_ms": 629.946,
+            "translation_ms": 0,
+            "server_total_ms": 5748.113
+          },
+          "outcome": "emitted",
+          "source": "live"
+        },
+        {
+          "segment_id": 3,
+          "timestamps": {
+            "speech_started_ms": 617069063.982,
+            "speech_detected_ms": 617069191.982,
+            "segmented_ms": 617074181.907,
+            "enqueued_ms": 617074181.968,
+            "dequeued_ms": 617074182.135,
+            "inference_started_ms": 617074182.138,
+            "asr_finished_ms": 617074812.084,
+            "translation_started_ms": 617074812.084,
+            "translation_finished_ms": 617074812.084,
+            "result_ready_ms": 617074812.095,
+            "websocket_sent_ms": 617074812.112,
+            "browser_received_ms": 617074812.405,
+            "first_readable_ms": 617074846.005,
+            "final_ms": 617074846.005,
+            "clock_uncertainty_ms": 1.198
+          },
+          "timings": {
+            "speech_to_segment_ms": 5117.925,
+            "queue_ms": 0.167,
+            "lock_ms": 0.003,
+            "asr_ms": 629.946,
+            "translation_ms": 0,
+            "server_total_ms": 5748.113,
+            "delivery_ms": 0.293,
+            "delivery_lower_ms": 0,
+            "delivery_upper_ms": 1.49,
+            "display_ms": 33.6,
+            "first_readable_ms": 5782.023,
+            "first_readable_lower_ms": 5780.825,
+            "first_readable_upper_ms": 5783.22,
+            "final_ms": 5782.023,
+            "final_lower_ms": 5780.825,
+            "final_upper_ms": 5783.22,
+            "clock_uncertainty_ms": 1.198
+          },
+          "outcome": "rendered",
+          "source": "live"
+        }
+      ],
+      "counters": {
+        "segmented": 3,
+        "emitted": 3,
+        "dropped_queue": 0,
+        "skipped_stale": 0,
+        "empty_asr": 0,
+        "asr_failed": 0,
+        "dropped_audio_frames": 0,
+        "dropped_audio_samples": 0
+      },
+      "clock_uncertainty_ms": 1.1975511742591858,
+      "rendered_segments": 3,
+      "unrendered_segments": 0,
+      "measurement_complete": true
+    },
+    {
+      "sample_id": "game-audio",
+      "sha256": "43368d6945828dab2fdfbb79ca72da762f800db014f78ac2882f092d5e57b6fb",
+      "iteration": 2,
+      "profile": "turbo / qwen3:4b-instruct-2507-q4_K_M",
+      "device": "cuda",
+      "events": [
+        {
+          "segment_id": 1,
+          "timestamps": {
+            "speech_started_ms": 617076533.921,
+            "speech_detected_ms": 617076661.921,
+            "segmented_ms": 617081271.85,
+            "enqueued_ms": 617081271.911,
+            "dequeued_ms": 617081272.101,
+            "inference_started_ms": 617081272.105,
+            "asr_finished_ms": 617081989.923,
+            "translation_started_ms": 617081989.929,
+            "translation_finished_ms": 617082068.484,
+            "result_ready_ms": 617082068.492,
+            "websocket_sent_ms": 617082068.508
+          },
+          "timings": {
+            "speech_to_segment_ms": 4737.929,
+            "queue_ms": 0.19,
+            "lock_ms": 0.004,
+            "asr_ms": 717.818,
+            "translation_ms": 78.555,
+            "server_total_ms": 5534.571
+          },
+          "outcome": "emitted",
+          "source": "live"
+        },
+        {
+          "segment_id": 1,
+          "timestamps": {
+            "speech_started_ms": 617076533.921,
+            "speech_detected_ms": 617076661.921,
+            "segmented_ms": 617081271.85,
+            "enqueued_ms": 617081271.911,
+            "dequeued_ms": 617081272.101,
+            "inference_started_ms": 617081272.105,
+            "asr_finished_ms": 617081989.923,
+            "translation_started_ms": 617081989.929,
+            "translation_finished_ms": 617082068.484,
+            "result_ready_ms": 617082068.492,
+            "websocket_sent_ms": 617082068.508,
+            "browser_received_ms": 617082068.805,
+            "first_readable_ms": 617082245.906,
+            "final_ms": 617082245.906,
+            "clock_uncertainty_ms": 1.199
+          },
+          "timings": {
+            "speech_to_segment_ms": 4737.929,
+            "queue_ms": 0.19,
+            "lock_ms": 0.004,
+            "asr_ms": 717.818,
+            "translation_ms": 78.555,
+            "server_total_ms": 5534.571,
+            "delivery_ms": 0.297,
+            "delivery_lower_ms": 0,
+            "delivery_upper_ms": 1.496,
+            "display_ms": 177.1,
+            "first_readable_ms": 5711.985,
+            "first_readable_lower_ms": 5710.786,
+            "first_readable_upper_ms": 5713.183,
+            "final_ms": 5711.985,
+            "final_lower_ms": 5710.786,
+            "final_upper_ms": 5713.183,
+            "clock_uncertainty_ms": 1.199
+          },
+          "outcome": "rendered",
+          "source": "live"
+        },
+        {
+          "segment_id": 2,
+          "timestamps": {
+            "speech_started_ms": 617081273.763,
+            "speech_detected_ms": 617081401.763,
+            "segmented_ms": 617086391.698,
+            "enqueued_ms": 617086391.758,
+            "dequeued_ms": 617086391.922,
+            "inference_started_ms": 617086391.925,
+            "asr_finished_ms": 617086985.676,
+            "translation_started_ms": 617086985.676,
+            "translation_finished_ms": 617086985.676,
+            "result_ready_ms": 617086985.686,
+            "websocket_sent_ms": 617086985.704
+          },
+          "timings": {
+            "speech_to_segment_ms": 5117.935,
+            "queue_ms": 0.164,
+            "lock_ms": 0.003,
+            "asr_ms": 593.751,
+            "translation_ms": 0,
+            "server_total_ms": 5711.923
+          },
+          "outcome": "emitted",
+          "source": "live"
+        },
+        {
+          "segment_id": 2,
+          "timestamps": {
+            "speech_started_ms": 617081273.763,
+            "speech_detected_ms": 617081401.763,
+            "segmented_ms": 617086391.698,
+            "enqueued_ms": 617086391.758,
+            "dequeued_ms": 617086391.922,
+            "inference_started_ms": 617086391.925,
+            "asr_finished_ms": 617086985.676,
+            "translation_started_ms": 617086985.676,
+            "translation_finished_ms": 617086985.676,
+            "result_ready_ms": 617086985.686,
+            "websocket_sent_ms": 617086985.704,
+            "browser_received_ms": 617086986.005,
+            "first_readable_ms": 617087012.605,
+            "final_ms": 617087012.605,
+            "clock_uncertainty_ms": 1.199
+          },
+          "timings": {
+            "speech_to_segment_ms": 5117.935,
+            "queue_ms": 0.164,
+            "lock_ms": 0.003,
+            "asr_ms": 593.751,
+            "translation_ms": 0,
+            "server_total_ms": 5711.923,
+            "delivery_ms": 0.301,
+            "delivery_lower_ms": 0,
+            "delivery_upper_ms": 1.5,
+            "display_ms": 26.6,
+            "first_readable_ms": 5738.842,
+            "first_readable_lower_ms": 5737.644,
+            "first_readable_upper_ms": 5740.041,
+            "final_ms": 5738.842,
+            "final_lower_ms": 5737.644,
+            "final_upper_ms": 5740.041,
+            "clock_uncertainty_ms": 1.199
+          },
+          "outcome": "rendered",
+          "source": "live"
+        },
+        {
+          "segment_id": 3,
+          "timestamps": {
+            "speech_started_ms": 617086393.733,
+            "speech_detected_ms": 617086521.733,
+            "segmented_ms": 617090871.65,
+            "enqueued_ms": 617090871.71,
+            "dequeued_ms": 617090871.887,
+            "inference_started_ms": 617090871.891,
+            "asr_finished_ms": 617091580.466,
+            "translation_started_ms": 617091580.466,
+            "translation_finished_ms": 617091580.466,
+            "result_ready_ms": 617091580.478,
+            "websocket_sent_ms": 617091580.495
+          },
+          "timings": {
+            "speech_to_segment_ms": 4477.917,
+            "queue_ms": 0.177,
+            "lock_ms": 0.004,
+            "asr_ms": 708.575,
+            "translation_ms": 0,
+            "server_total_ms": 5186.745
+          },
+          "outcome": "emitted",
+          "source": "live"
+        },
+        {
+          "segment_id": 3,
+          "timestamps": {
+            "speech_started_ms": 617086393.733,
+            "speech_detected_ms": 617086521.733,
+            "segmented_ms": 617090871.65,
+            "enqueued_ms": 617090871.71,
+            "dequeued_ms": 617090871.887,
+            "inference_started_ms": 617090871.891,
+            "asr_finished_ms": 617091580.466,
+            "translation_started_ms": 617091580.466,
+            "translation_finished_ms": 617091580.466,
+            "result_ready_ms": 617091580.478,
+            "websocket_sent_ms": 617091580.495,
+            "browser_received_ms": 617091580.805,
+            "first_readable_ms": 617091595.906,
+            "final_ms": 617091595.906,
+            "clock_uncertainty_ms": 1.199
+          },
+          "timings": {
+            "speech_to_segment_ms": 4477.917,
+            "queue_ms": 0.177,
+            "lock_ms": 0.004,
+            "asr_ms": 708.575,
+            "translation_ms": 0,
+            "server_total_ms": 5186.745,
+            "delivery_ms": 0.31,
+            "delivery_lower_ms": 0,
+            "delivery_upper_ms": 1.509,
+            "display_ms": 15.1,
+            "first_readable_ms": 5202.173,
+            "first_readable_lower_ms": 5200.974,
+            "first_readable_upper_ms": 5203.371,
+            "final_ms": 5202.173,
+            "final_lower_ms": 5200.974,
+            "final_upper_ms": 5203.371,
+            "clock_uncertainty_ms": 1.199
+          },
+          "outcome": "rendered",
+          "source": "live"
+        }
+      ],
+      "counters": {
+        "segmented": 3,
+        "emitted": 3,
+        "dropped_queue": 0,
+        "skipped_stale": 0,
+        "empty_asr": 0,
+        "asr_failed": 0,
+        "dropped_audio_frames": 0,
+        "dropped_audio_samples": 0
+      },
+      "clock_uncertainty_ms": 1.1985511613845825,
+      "rendered_segments": 3,
+      "unrendered_segments": 0,
+      "measurement_complete": true
+    }
+  ]
+}

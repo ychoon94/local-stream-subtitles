@@ -147,7 +147,7 @@ npm ci
 .venv\Scripts\python.exe -m pip install -r requirements-dev.txt
 npm test
 npm run test:vimeo
-.venv\Scripts\python.exe -m pytest -q tests/test_backend.py
+.venv\Scripts\python.exe -m pytest -q tests
 powershell -NoProfile -File tests/test_launchers.ps1
 .venv\Scripts\python.exe -m scripts.check_release
 ```
@@ -155,6 +155,11 @@ powershell -NoProfile -File tests/test_launchers.ps1
 Unit tests use mocked inference and require no GPU, model downloads, or paid API.
 GitHub Actions runs those tests plus Windows launcher isolation checks. Real GPU
 and browser integration checks run locally; they are not covered by hosted CI.
+
+For the optional timing flag, hash-pinned Japanese/English/mixed/game-audio smoke
+corpus, live PCM replay and actual Chrome rendering measurements, see
+[latency observability](docs/latency-observability.md). Measurement is disabled by
+default and retains the existing buffering and inference behavior.
 
 The optional `npm run test:browser` check needs the service running and a public
 `.runtime/streaming-sample.wav` fixture. It uses a separate browser profile and
